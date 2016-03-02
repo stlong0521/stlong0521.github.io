@@ -60,8 +60,8 @@
 
 <!--     <div class='article'>
         <div class="content-title">
-            <a href="http://stlong0521.github.io/20160228 - Logistic Regression.html"><h1>Binary and Multi-Class Logistic Regression Classifiers</h1></a>
-Sun 28 February 2016
+            <a href="http://stlong0521.github.io/20160228 - Logistic Regression.html"><h1>Binary and Multiclass Logistic Regression Classifiers</h1></a>
+Sun 28 Feb 2016
 
 by <a class="url fn" href="http://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
  
@@ -72,7 +72,7 @@ by <a class="url fn" href="http://stlong0521.github.io/author/tianlong-song.html
         </div>
         
         <div><p>The generative classification model, such as Naive Bayes, tries to learn the probabilities and then predict by using Bayes rules to calculate the posterior, <span class="math">\(p(y|\textbf{x})\)</span>. However, discrimitive classifiers model the posterior directly. As one of the most popular discrimitive classifiers, logistic regression directly models the linear decision boundary.</p>
-<h3>Binary Logistic Regression Classifier</h3>
+<h3>Binary Logistic Regression Classifier<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup></h3>
 <p>Let us start with the binary case. For an M-dimensional feature vector <span class="math">\(\textbf{x}=[x_1,x_2,...,x_M]^T\)</span>, the posterior probability of class <span class="math">\(y\in\{\pm{1}\}\)</span> given <span class="math">\(\textbf{x}\)</span> is assumed to satisfy
 </p>
 <div class="math">\begin{equation}
@@ -113,8 +113,8 @@ Then, we can learn the optimal <span class="math">\(\textbf{w}\)</span> by start
 \end{equation}</div>
 <p>
 where <span class="math">\(\eta_t\)</span> is the learning step size. It can be invariant to time, but time-varying step sizes could potential reduce the convergence time, e.g., setting <span class="math">\(\eta_t\propto{1/\sqrt{t}}\)</span> such that the step size decreases with an increasing time <span class="math">\(t\)</span>.</p>
-<h3>Multi-Class Logistic Regression Classifier</h3>
-<p>When it is generalized to multi-class case, the logistic regression model needs to adapt accordingly. Now we have <span class="math">\(K\)</span> possible classes, that is, <span class="math">\(y\in\{1,2,..,K\}\)</span>. It is assumed that the posterior probability of class <span class="math">\(y=k\)</span> given <span class="math">\(\textbf{x}\)</span> follows
+<h3>Multiclass Logistic Regression Classifier<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup></h3>
+<p>When it is generalized to multiclass case, the logistic regression model needs to adapt accordingly. Now we have <span class="math">\(K\)</span> possible classes, that is, <span class="math">\(y\in\{1,2,..,K\}\)</span>. It is assumed that the posterior probability of class <span class="math">\(y=k\)</span> given <span class="math">\(\textbf{x}\)</span> follows
 </p>
 <div class="math">\begin{equation}
 \ln{p(y=k|\textbf{x})}\propto\textbf{w}_k^T\textbf{x},
@@ -159,13 +159,22 @@ where <span class="math">\(I(\cdot)\)</span> is a binary indicator function. App
 <p>
 Note that we have "<span class="math">\(+\)</span>" in (\ref{Eqn:Iteration_Multiple}) instead of "<span class="math">\(-\)</span>" in (\ref{Eqn:Iteration_Binary}), because the maximum likelihood estimation in the binary case is eventually converted to a minimization problem, while here we keep performing maximization.</p>
 <h3>How to Perform Predictions?</h3>
-<p>Once the optimal weights are learned from the logistic regression model, for any new feature vector <span class="math">\(\textbf{x}\)</span>, we can easily calculate the probability that it is associated to each class label <span class="math">\(k\)</span> by (\ref{Eqn:Prob_Binary}) in the binary case or (\ref{Eqn:Prob_Multiple}) in the multi-class case. With the probabilities for each class label available, we can then perform:</p>
+<p>Once the optimal weights are learned from the logistic regression model, for any new feature vector <span class="math">\(\textbf{x}\)</span>, we can easily calculate the probability that it is associated to each class label <span class="math">\(k\)</span> by (\ref{Eqn:Prob_Binary}) in the binary case or (\ref{Eqn:Prob_Multiple}) in the multiclass case. With the probabilities for each class label available, we can then perform:</p>
 <ul>
 <li>a hard decision by identifying the class label with the highest probability, or</li>
 <li>a soft decision by showing the top <span class="math">\(k\)</span> most probable class labels with their corresponding probabilities.</li>
 </ul>
-<h3>An Example Applying Multi-Class Logistic Regression</h3>
-<p>To see an example applying multi-class logistic regression classification, <a href="https://github.com/stlong0521/logistic-classification">click here</a> for more information.</p>
+<h3>An Example Applying Multiclass Logistic Regression</h3>
+<p>To see an example applying multiclass logistic regression classification, <a href="https://github.com/stlong0521/logistic-classification">click here</a> for more information.</p>
+<h3>References</h3>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>C. M. Bishop, <em>Pattern Recognition and Machine Learning</em>. New York: Springer, 2006.&#160;<a class="footnote-backref" href="#fnref:1" rev="footnote" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
         indent = "0em",
@@ -227,8 +236,8 @@ Note that we have "<span class="math">\(+\)</span>" in (\ref{Eqn:Iteration_Multi
     </div> -->
 
     <div class='article'>
-        <a href="http://stlong0521.github.io/20160228 - Logistic Regression.html"><h2>Binary and Multi-Class Logistic Regression Classifiers</h2></a>
-        <div class= "well small"> Sun 28 February 2016
+        <a href="http://stlong0521.github.io/20160228 - Logistic Regression.html"><h2>Binary and Multiclass Logistic Regression Classifiers</h2></a>
+        <div class= "well small"> Sun 28 Feb 2016
 
 by <a class="url fn" href="http://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
  
@@ -303,7 +312,7 @@ by <a class="url fn" href="http://stlong0521.github.io/author/tianlong-song.html
 
     <div class='article'>
         <a href="http://stlong0521.github.io/about.html"><h2>About Tianlong Song</h2></a>
-        <div class= "well small"> Thu 25 February 2016
+        <div class= "well small"> Thu 25 Feb 2016
 
 by <a class="url fn" href="http://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
  
