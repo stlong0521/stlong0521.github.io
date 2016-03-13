@@ -60,138 +60,118 @@
 
 <!--     <div class='article'>
         <div class="content-title">
-            <a href="https://stlong0521.github.io/20160305 - Missing Word.html"><h1>Locating and Filling Missing Words in Sentences</h1></a>
-Sat 05 Mar 2016
+            <a href="https://stlong0521.github.io/20160312 - EM and GMM.html"><h1>Expectation Maximization Algorithm and Gaussian Mixture Model</h1></a>
+Sat 12 Mar 2016
 
 by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
  
 
 
  
-    Tags <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a>  
+    Tags <a href="https://stlong0521.github.io/tag/data-science.html">Data Science</a> <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  
         </div>
         
-        <div><p>There has been many occasions that we have incomplete sentences that are needed to completed. One example is that in speech recognition noisy environment can lead to unrecognizable words, but we still hope to recover and understand the complete sentence (e.g., by inference); another example is sentence completion questions that appear in language tests (e.g., SAT, GRE, etc.).</p>
-<h3>What are Exactly the Problem?</h3>
-<p>Generally, the problem we are aiming to solve is locating and filling any missing words in incomplete sentences. However, this problem seems too ambitious so far, and we direct ourselves to a simplified version of this problem. To simplify the problem, we assume that there is only one missing word in a sentence, and the missing word is neither the first word nor the last word of the sentence. This problem originally comes from <a href="https://www.kaggle.com/c/billion-word-imputation">here</a>.</p>
-<h3>Locating the Missing Word</h3>
-<p>Two approaches are presented here so as to locate the missing word.</p>
-<h4>N-gram Model</h4>
-<p>For a given training data set, define <span class="math">\(C(w_1,w_2)\)</span> as the number of occurrences of the bigram pattern <span class="math">\((w_1,w_2)\)</span>, and <span class="math">\(C(w_1,w,w_2)\)</span> the number of occurrences of the trigram pattern <span class="math">\((w_1,w,w_2)\)</span>. Then, the number of occurrences of the pattern, where there is one and only one word between <span class="math">\(w_1\)</span> and <span class="math">\(w_2\)</span>, can be calculated by
+        <div><p>In statistical modeling, it is possible that some observations are just missing. For example, when flipping two biased coins with unknown biases, we only have a sequence of observations on heads and tails, but forgot to record which coin each observation comes from. In this case, the conventional maximum likelihood (ML) or maximum a posteriori (MAP) algorithm would no longer be able to work, and it is time for the expectation maximization (EM) algorithm to come into play.</p>
+<h3>A Motivating Example</h3>
+<p>Although the two-biased-coin example above works as a valid example, another example will be discussed here, as it is more relevant to practical needs. Let us assume that we have a collection of float numbers, which come from two different Gaussian distributions. Unfortunately, we do not know which distribution each number comes from. Now we are supposed to learn the two Gaussian distributions (i,e, their means and variances) from the given data. This is the well-known Gaussian mixture model (GMM). What makes things difficult is that we have missing observations, i.e., membership of each number towards the two distributions. Though conventional ML or MAP would not work here, this is a perfect problem that EM can handle.</p>
+<h3>Expectation Maximization (EM) Algorithm<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup></h3>
+<p>Let us consider a statistical model with a vector of unknown parameters <span class="math">\(\boldsymbol\theta\)</span>, which generates a set of observed data <span class="math">\(\textbf{X}\)</span> and a set of missing observations <span class="math">\(\textbf{Z}\)</span>. The likelihood function, <span class="math">\(p(\textbf{X},\textbf{Z}|\boldsymbol\theta)\)</span>, characterizes the probability that <span class="math">\(\textbf{X}\)</span> and <span class="math">\(\textbf{Z}\)</span> appear given the model with parameters <span class="math">\(\boldsymbol\theta\)</span>. An intuitive idea to estimate <span class="math">\(\boldsymbol\theta\)</span> would be trying to perform the maximum likelihood estimation (MLE) considering all possible <span class="math">\(\textbf{Z}\)</span>, i.e.,
 </p>
 <div class="math">\begin{equation}
-D(w_1,w_2)=\sum_{w\in{V}}C(w_1,w,w_2),
+\max_{\boldsymbol\theta}{\ln{p(\textbf{X}|\boldsymbol\theta)}}=\max_{\boldsymbol\theta}{\ln{\sum_{\textbf{Z}}{p(\textbf{X},\textbf{Z}|\boldsymbol\theta)}}}=\max_{\boldsymbol\theta}{\ln{\sum_{\textbf{Z}}{p(\textbf{X}|\textbf{Z},\boldsymbol\theta)p(\textbf{Z}|\boldsymbol\theta)}}}.
 \end{equation}</div>
 <p>
-where <span class="math">\(V\)</span> is the vocabulary.</p>
-<p>Consider a particular location, <span class="math">\(l\)</span>, of an incomplete sentence of length <span class="math">\(L\)</span>, and let <span class="math">\(w_l\)</span> be the <span class="math">\(l\)</span>th word in the sentence. <span class="math">\(D(w_{l-1},w_{l})\)</span> would be the number of positive votes from the training data set for missing word at this location, while <span class="math">\(C(w_{l-1},w_{l})\)</span> would be correspondingly the number of negative votes. We define the score indicating there is a missing word at location <span class="math">\(l\)</span> as
+Unfortunately, the problem above is not directly tractable, since we do not have any prior knowledge on the missing observations <span class="math">\(\textbf{Z}\)</span>.</p>
+<p>The EM algorithm aims to solve the problem above by starting with a guess on <span class="math">\(\boldsymbol\theta=\boldsymbol\theta_{0}\)</span> and then iteratively applying the two steps as indicated below:</p>
+<ul>
+<li><em>Expectation Step (E Step):</em> Calculate the log likelihood with respect to <span class="math">\(\boldsymbol\theta\)</span> given <span class="math">\(\boldsymbol\theta_{t}\)</span> by
+<div class="math">\begin{equation}
+\mathcal{L}(\boldsymbol\theta|\boldsymbol\theta_{t})=\ln{\sum_{\textbf{Z}}{p(\textbf{X}|\textbf{Z},\boldsymbol\theta_{t})p(\textbf{Z}|\boldsymbol\theta_{t})}};
+\end{equation}</div>
+</li>
+<li><em>Maximization Step (M Step):</em> Find the parameter vector that maximizes the log likelihood above and then update it as
+<div class="math">\begin{equation}
+\theta_{t+1}={\arg \, \max}_{\theta}{\mathcal{L}(\boldsymbol\theta|\boldsymbol\theta_{t})}.
+\end{equation}</div>
+</li>
+</ul>
+<p>There are two things that should be noted here:</p>
+<ul>
+<li>There are two categories of EM: <em>hard</em> EM and <em>soft</em> EM. The algorithm illustrated above is soft EM, because the log likelihood in the E step is weighted upon all possible <span class="math">\(\textbf{Z}\)</span> with their probabilities. While in hard EM, instead of using weighted average, we simply select the most probable <span class="math">\(\textbf{Z}\)</span> and then move forward. The <a href="https://en.wikipedia.org/wiki/K-means_clustering">k-means algorithm</a> is a good example of hard EM algorithm.</li>
+<li>The EM algorithm typically converges to a local optimum, and <em>cannot</em> guarantee global optimum. With this being said, the solution might differ with different initialization, and it is possibly helpful to try more than one initialization when applying EM practically.</li>
+</ul>
+<h3>Gaussian Mixture Model (GMM)</h3>
+<p>In the motivating example, a GMM with two Gaussian distributions was introduced. Here we are going to extend it to a general case with <span class="math">\(K\)</span> Gaussian distributions, and the data points will be generalized to be multidimensional. At the same time, we will discuss how it can be used for clustering.</p>
+<p>Given a data set containing <span class="math">\(N\)</span> data points, <span class="math">\(\mathcal{D}=\{\textbf{x}_1,\textbf{x}_2,...,\textbf{x}_N\}\)</span>, in which each data point is a <span class="math">\(M\)</span>-dimensional column vector and comes from one of <span class="math">\(K\)</span> Gaussian distributions. Here we will introduce <span class="math">\(\mathcal{Z}=\{z_1,z_2,...,z_N\}\)</span> with <span class="math">\(z_i\in\{1,2,...,K\}\)</span> as latent (hidden) variables to represent the cluster membership of the data points in <span class="math">\(\mathcal{D}\)</span>. The <span class="math">\(K\)</span> Gaussian distributions are characterized by <span class="math">\(\mathcal{N}(\boldsymbol\mu_j,\boldsymbol\Sigma_j)\)</span> for <span class="math">\(j=1,2,...,K\)</span>, and the <span class="math">\(j\)</span>th distribution has a weight of <span class="math">\(\pi_j\)</span> accounted in the overall distribution. Let us first try to map this GMM model to the EM algorithm component by component:</p>
+<ul>
+<li><span class="math">\(\mathcal{D}\)</span> is the observed data;</li>
+<li><span class="math">\(\mathcal{Z}\)</span> is the missing observations;</li>
+<li><span class="math">\(\boldsymbol\mu_j\)</span>, <span class="math">\(\boldsymbol\Sigma_j\)</span> and <span class="math">\(\pi_j\)</span> are the unknown model parameters.</li>
+</ul>
+<p>Following the EM algorithm, we will start with a guess on the unknown parameters, and then iteratively applying E step and M step until convergence. In the E step, we calculate the log likelihood based on given model parameters by
 </p>
-<div class="math">\begin{equation} \label{Eqn:Score}
-S_l=\frac{D(w_{l-1},w_{l})^{1+\gamma}}{C(w_{l-1},w_{l})+D(w_{l-1},w_{l})}-\frac{C(w_{l-1},w_{l})^{1+\gamma}}{C(w_{l-1},w_{l})+D(w_{l-1},w_{l})},
-\end{equation}</div>
+<div class="math">\begin{align}
+\begin{aligned}
+LL&amp;=\ln{p(\textbf{x}_1,\textbf{x}_2,...,\textbf{x}_N)}\\
+&amp;=\ln{\prod_{i=1}^{N}{p(\textbf{x}_i)}}\\
+&amp;=\ln{\prod_{i=1}^{N}{\sum_{j=1}^{K}{p(z_i=j)p(\textbf{x}_i|z_i=j)}}}\\
+&amp;=\sum_{i=1}^{N}{\ln\left(\sum_{j=1}^{K}{\pi_j\mathcal{N}(\textbf{x}_i|\boldsymbol\mu_j,\boldsymbol\Sigma_j)}\right)}.
+\end{aligned}
+\end{align}</div>
+<p>In the M step, we maximize the log likelihood by solving the optimization problem below:
+</p>
+<div class="math">\begin{align}
+\begin{aligned}
+\max_{\boldsymbol\mu_j,\boldsymbol\Sigma_j,\pi_j}~~&amp;{LL}\\
+&amp;s.t.~\sum_{j=1}^{K}{\pi_j}=1.
+\end{aligned}
+\end{align}</div>
 <p>
-where <span class="math">\(\gamma\)</span> is a small positive constant. Hence, the missing word location can be identified by
+We can apply Lagrange multiplier to solve the problem above. Let
 </p>
 <div class="math">\begin{equation}
-\hat{l}={\arg \, \max}_{1 \leq l \leq L-1} S_l.
-\end{equation}</div>
-<p>Note that in (\ref{Eqn:Score}), if we set <span class="math">\(\gamma=0\)</span>, the left part would be exactly the percentage of positive votes for missing word at that location, and the right part is the percentage of negative votes. It seems a fairly reasonable score, then <em>why do we still need a positive <span class="math">\(\gamma\)</span></em>? The underlying reason is that intuitively the more number of votes for a particular decision, the more confident we are on that decision. This trend is reflected in a positive <span class="math">\(\gamma\)</span>, which can be viewed as <em>sparse vote penalty</em> and is useful in breaking ties in the missing word location voting. That is, if we have exactly the same ratio of positive votes relative to negative votes for two candidate locations, e.g., 80 positive votes v.s. 20 negative votes for location A, and 8 positive votes v.s. 2 negative votes for location B, we would believe that location A is more likely to be the missing word location compared with location B.</p>
-<h4>Word Distance Statistics (WDS)</h4>
-<p>In view of the fact that the statistics of the two words immediately adjacent to a given location contribute a lot in deciding whether the location has a word missing, we tentatively guess that all the words within a window centered at that location would more or less contribute some information as well. As a result, we introduce the concept of word distance statistics (WDS).</p>
-<p>More specifically, we use <span class="math">\(\widetilde{C}(w_1,w_2,m)\)</span> to denote the number of occurrences of the pattern, where there is exactly <span class="math">\(m\)</span> words between <span class="math">\(w_1\)</span> and <span class="math">\(w_2\)</span>, i.e., the word distance of <span class="math">\(w_1\)</span> and <span class="math">\(w_2\)</span> is <span class="math">\(m\)</span>. For a given location <span class="math">\(l\)</span> in an incomplete sentence and a word window size <span class="math">\(W\)</span>, we are interested in the word distance statistics of each word pair, in which one word <span class="math">\(w_i\)</span> is on the left of the location <span class="math">\(l\)</span>, and the other word <span class="math">\(w_j\)</span> is on the right, as illustrated in the figure below.</p>
-<p><img src="/figures/20160305/WDS.png" alt="WDS" width="400" height="150"></p>
-<p>Formally, for any <span class="math">\(l-W/2 \leq i \leq l-1\)</span> and <span class="math">\(l \leq j \leq l+W/2-1\)</span>, <span class="math">\(\widetilde{C}(w_i,w_j,j-i)\)</span> would be the number of positive votes for missing word at this location, while <span class="math">\(\widetilde{C}(w_i,w_j,j-i-1)\)</span> is the number of negative votes. Applying the idea in (\ref{Eqn:Score}), for each word pair <span class="math">\((w_i,w_j)\)</span>, we extract its feature as the score indicating there is a missing word at location <span class="math">\(l\)</span>, i.e.,
-</p>
-<div class="math">\begin{equation} \label{Eqn:ScoreGeneralized}
-S_l(i,j)=\frac{\widetilde{C}(w_i,w_j,j-i)^{1+\gamma}}{\widetilde{C}(w_i,w_j,j-i)+\widetilde{C}(w_i,w_j,j-i-1)}-\frac{\widetilde{C}(w_i,w_j,j-i-1)^{1+\gamma}}{\widetilde{C}(w_i,w_j,j-i)+\widetilde{C}(w_i,w_j,j-i-1)}.
+L=\sum_{i=1}^{N}{\ln\left(\sum_{j=1}^{K}{\pi_j\mathcal{N}(\textbf{x}_i|\boldsymbol\mu_j,\boldsymbol\Sigma_j)}\right)}-\lambda\left(\sum_{j=1}^{K}{\pi_j}-1\right),
 \end{equation}</div>
 <p>
-As a special example, let <span class="math">\(i=l-1\)</span> and <span class="math">\(j=l\)</span>, (\ref{Eqn:ScoreGeneralized}) would be reduced to (\ref{Eqn:Score}).</p>
-<p>To find the missing word location, we need to assign different weights to the extracted features, <span class="math">\(S_l(i,j)\)</span>. Then, the missing word location can be determined by
+where <span class="math">\(\lambda\)</span> is the Lagrange multiplier. Taking partial derivatives and setting them to zero, we can obtain the optimal parameters as below:
 </p>
-<div class="math">\begin{equation} \label{Eqn:LocationDetermination}
-\hat{l}={\arg \, \max}_{1 \leq l \leq L-1} \sum_{l-\frac{W}{2} \leq i \leq l-1}\sum_{l \leq j \leq l+\frac{W}{2}-1}v(i,j)S_l(i,j),
+<div class="math">\begin{equation} \label{Eqn:Maximization_1}
+\boldsymbol\mu_j=\frac{\sum_{i=1}^{N}{\gamma_{ij}}\textbf{x}_i}{\sum_{i=1}^{N}{\gamma_{ij}}},
+\end{equation}</div>
+<div class="math">\begin{equation} \label{Eqn:Maximization_2}
+\boldsymbol\Sigma_j=\frac{\sum_{i=1}^{N}{\gamma_{ij}}(\textbf{x}_i-\boldsymbol\mu_j)(\textbf{x}_i-\boldsymbol\mu_j)^T}{\sum_{i=1}^{N}{\gamma_{ij}}},
+\end{equation}</div>
+<div class="math">\begin{equation} \label{Eqn:Maximization_3}
+\pi_j=\frac{1}{N}{\sum_{i=1}^{N}{\gamma_{ij}}},
 \end{equation}</div>
 <p>
-where the weight, <span class="math">\(v(i,j)\)</span>, should be monotonically decreasing with respect to <span class="math">\(|j-i|\)</span>.</p>
-<h3>Filling the Missing Word</h3>
-<p>To find the most probable word in the given missing word location, we take into account five conditional probabilities, as shown in the table below, to explore the statistical connection between the candidate words and the surrounding words at the missing word location. Ultimately, the most probable missing word can be determined by
+where <span class="math">\(\gamma_{ij}=p(z_i=j|\textbf{x}_i)\)</span> is the cluster membership, which can be calculated using Bayes theorem,
 </p>
 <div class="math">\begin{equation}
-\hat{w}={\arg \, \max}_{w\in{B}} \sum_{1 \leq i \leq 5} v_iP_i,
+\begin{split}
+\gamma_{ij}&amp;=p(z_i=j|\textbf{x}_i)\\
+&amp;=\frac{p(z_i=j)p(\textbf{x}_i|z_i=j)}{\sum_{j=1}^{K}{p(z_i=j)p(\textbf{x}_i|z_i=j)}}\\
+&amp;=\frac{\pi_j\mathcal{N}(\textbf{x}_i|\boldsymbol\mu_j,\boldsymbol\Sigma_j)}{\sum_{j=1}^{K}{\pi_j\mathcal{N}(\textbf{x}_i|\boldsymbol\mu_j,\boldsymbol\Sigma_j)}}.
+\end{split}
 \end{equation}</div>
-<p>
-where <span class="math">\(B\)</span> is the candidate word space (detailed <a href="https://github.com/stlong0521/missing-word/blob/master/Project%20Report.pdf">here</a>), and the weight <span class="math">\(v_i\)</span> is used to reflect the importance of each conditional probability in contributing to the final score.</p>
-<p><img src="/figures/20160305/CondProb.png" alt="WDS" width="400" height="150"></p>
-<p>Note that in the table above, "*" denotes an arbitrary word.</p>
-<h3>Experimental Results</h3>
-<p>The training data contains <span class="math">\(30,301,028\)</span> complete sentences, of which the average sentence length is approximately <span class="math">\(25\)</span>. In the vocabulary with a size of <span class="math">\(2,425,337\)</span>, <span class="math">\(14,216\)</span> words that have occurred in at least <span class="math">\(0.1\%\)</span> of total sentences are labeled as high-frequency words, and the remaining <span class="math">\(58,417,315\)</span> words are labeled as 'UNKA'. To perform the cross validation, in our experiments, the training data is splitted into two part, TRAIN and DEV. The TRAIN set is used to train our models, and the DEV set is applied to test our models.</p>
-<h4>Missing Word Location</h4>
-<p>The table below shows the estimation accuracy of the missing word locations for the two proposed approaches, N-gram and WDS. For comparison, we list the corresponding probabilities by chance as well. Each entry shows the probabilities that the correct location is included in the ranked candidate location list returned by each approach, where the list size varies from <span class="math">\(1\)</span> to <span class="math">\(10\)</span>. The sparse vote penalty coefficient, <span class="math">\(\gamma\)</span>, is set to 0.01. In the WDS approach, we consider a word window size <span class="math">\(W=4\)</span>, i.e., four pairs of words are taken into account.</p>
-<table class="table table-striped table-bordered table-hover">
-<thead>
-<tr>
-<th align="center"></th>
-<th align="center">Top 1</th>
-<th align="center">Top 2</th>
-<th align="center">Top 3</th>
-<th align="center">Top 5</th>
-<th align="center">Top 10</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="center">Chance</td>
-<td align="center">4%</td>
-<td align="center">8%</td>
-<td align="center">12%</td>
-<td align="center">20%</td>
-<td align="center">40%</td>
-</tr>
-<tr>
-<td align="center">N-gram</td>
-<td align="center">51.47%</td>
-<td align="center">63.70%</td>
-<td align="center">71.00%</td>
-<td align="center">80.26%</td>
-<td align="center">91.54%</td>
-</tr>
-<tr>
-<td align="center">WDS</td>
-<td align="center">52.06%</td>
-<td align="center">64.50%</td>
-<td align="center">71.76%</td>
-<td align="center">80.91%</td>
-<td align="center">91.93%</td>
-</tr>
-</tbody>
-</table>
-<h4>Missing Word Filling</h4>
-<p>The table below shows the accuracies of filling the missing word given the location. Each row of the second column shows the probability that the correct word is included in the ranked candidate words list returned by the proposed approach.</p>
-<table class="table table-striped table-bordered table-hover">
-<thead>
-<tr>
-<th align="center"></th>
-<th align="center">Top 1</th>
-<th align="center">Top 2</th>
-<th align="center">Top 3</th>
-<th align="center">Top 5</th>
-<th align="center">Top 10</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="center">Accuracy</td>
-<td align="center">32.15%</td>
-<td align="center">41.49%</td>
-<td align="center">46.23%</td>
-<td align="center">52.02%</td>
-<td align="center">59.15%</td>
-</tr>
-</tbody>
-</table>
-<h3>Acknowledgement</h3>
-<p>I did this project with my partner, <a href="https://zhwa.github.io/">Zhe Wang</a>. To see the codes and/or report, <a href="https://github.com/stlong0521/missing-word">click here</a> for more information.</p>
+<p>To summarize, the GMM model can be learned using EM algorithm as in the following steps:</p>
+<ol>
+<li>Initialize <span class="math">\(\boldsymbol\mu_j\)</span>, <span class="math">\(\boldsymbol\Sigma_j\)</span> and <span class="math">\(\pi_j\)</span> for <span class="math">\(j=1,2,...,K\)</span>;</li>
+<li>Repeat the following two steps until the log likelihood converges:<ul>
+<li>E Step: Estimate cluster membership <span class="math">\(\gamma_{ij}\)</span> by the equation right above for all data point <span class="math">\(x_i\)</span> and cluster <span class="math">\(z_i=j\)</span>;</li>
+<li>M Step: Maximize the log likelihood and update the model parameters by (\ref{Eqn:Maximization_1})-(\ref{Eqn:Maximization_3}) based on cluster membership <span class="math">\(\gamma_{ij}\)</span>.</li>
+</ul>
+</li>
+</ol>
+<h3>References</h3>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm"><em>Expectation–maximization algorithm</em></a>, accessed on Mar 12, 2016.&#160;<a class="footnote-backref" href="#fnref:1" rev="footnote" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
         indent = "0em",
@@ -253,6 +233,25 @@ where <span class="math">\(B\)</span> is the candidate word space (detailed <a h
     </div> -->
 
     <div class='article'>
+        <a href="https://stlong0521.github.io/20160312 - EM and GMM.html"><h2>Expectation Maximization Algorithm and Gaussian Mixture Model</h2></a>
+        <div class= "well small"> Sat 12 Mar 2016
+
+by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
+ 
+
+
+ 
+    Tags <a href="https://stlong0521.github.io/tag/data-science.html">Data Science</a> <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  </div>
+        <div class="summary"><p>In statistical modeling, it is possible that some observations are just missing. For example, when flipping two biased coins with unknown biases, we only have a sequence of observations on heads and tails, but forgot to record which coin each observation comes from. In this case, the conventional maximum likelihood ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20160312 - EM and GMM.html">read more</a></div>
+    </div>
+	
+
+ 
+        
+
+ 
+
+    <div class='article'>
         <a href="https://stlong0521.github.io/20160305 - Missing Word.html"><h2>Locating and Filling Missing Words in Sentences</h2></a>
         <div class= "well small"> Sat 05 Mar 2016
 
@@ -263,8 +262,8 @@ by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.htm
  
     Tags <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a>  </div>
         <div class="summary"><p>There has been many occasions that we have incomplete sentences that are needed to completed. One example is that in speech recognition noisy environment can lead to unrecognizable words, but we still hope to recover and understand the complete sentence (e.g., by inference); another example is sentence completion questions ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20160305 - Missing Word.html">read more</a></div>
-    </div>
-	
+    </div>	
+				
 
  
         
