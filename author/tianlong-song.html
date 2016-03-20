@@ -60,115 +60,168 @@
 
 <!--     <div class='article'>
         <div class="content-title">
-            <a href="https://stlong0521.github.io/20160312 - EM and GMM.html"><h1>Expectation Maximization Algorithm and Gaussian Mixture Model</h1></a>
-Sat 12 Mar 2016
+            <a href="https://stlong0521.github.io/20160319 - HMM and POS.html"><h1>Hidden Markov Model and Part of Speech Tagging</h1></a>
+Sat 19 Mar 2016
 
 by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
  
 
 
  
-    Tags <a href="https://stlong0521.github.io/tag/data-science.html">Data Science</a> <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  
+    Tags <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a> <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  
         </div>
         
-        <div><p>In statistical modeling, it is possible that some observations are just missing. For example, when flipping two biased coins with unknown biases, we only have a sequence of observations on heads and tails, but forgot to record which coin each observation comes from. In this case, the conventional maximum likelihood (ML) or maximum a posteriori (MAP) algorithm would no longer be able to work, and it is time for the expectation maximization (EM) algorithm to come into play.</p>
-<h3>A Motivating Example</h3>
-<p>Although the two-biased-coin example above works as a valid example, another example will be discussed here, as it is more relevant to practical needs. Let us assume that we have a collection of float numbers, which come from two different Gaussian distributions. Unfortunately, we do not know which distribution each number comes from. Now we are supposed to learn the two Gaussian distributions (i,e, their means and variances) from the given data. This is the well-known Gaussian mixture model (GMM). What makes things difficult is that we have missing observations, i.e., membership of each number towards the two distributions. Though conventional ML or MAP would not work here, this is a perfect problem that EM can handle.</p>
-<h3>Expectation Maximization (EM) Algorithm<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup></h3>
-<p>Let us consider a statistical model with a vector of unknown parameters <span class="math">\(\boldsymbol\theta\)</span>, which generates a set of observed data <span class="math">\(\textbf{X}\)</span> and a set of missing observations <span class="math">\(\textbf{Z}\)</span>. The likelihood function, <span class="math">\(p(\textbf{X},\textbf{Z}|\boldsymbol\theta)\)</span>, characterizes the probability that <span class="math">\(\textbf{X}\)</span> and <span class="math">\(\textbf{Z}\)</span> appear given the model with parameters <span class="math">\(\boldsymbol\theta\)</span>. An intuitive idea to estimate <span class="math">\(\boldsymbol\theta\)</span> would be trying to perform the maximum likelihood estimation (MLE) considering all possible <span class="math">\(\textbf{Z}\)</span>, i.e.,
+        <div><p>In a Markov model, we generally assume that the states are directly observable or one state corresponds to one observation/event only. However, this is not always true. A good example would be: in speech recognition, we are supposed to identify a sequence of words given a sequence of utterances, in which case the states (words) are not directly observable and one single state (word) could have different observations (utterances). This is a perfect example that could be treated as a hidden Markov model (HMM), by which the hidden states can be inferred from the observations.</p>
+<h3>Elements of a Hidden Markov Model (HMM)<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup></h3>
+<p>A hidden Markov model, <span class="math">\(\Phi\)</span>, typically includes the following elements:</p>
+<ul>
+<li>Time: <span class="math">\(t=\{1,2,...,T\}\)</span>;</li>
+<li><span class="math">\(N\)</span> States: <span class="math">\(Q=\{1,2,...,N\}\)</span>;</li>
+<li><span class="math">\(M\)</span> Observations: <span class="math">\(O=\{1,2,...,M\}\)</span>;</li>
+<li>Initial Probabilities: <span class="math">\(\pi_i=p(q_1=i),~1 \leq i \leq N\)</span>;</li>
+<li>Transition Probabilities: <span class="math">\(a_{ij}=p(q_{t+1}=j|q_t=i),~1 \leq i,j \leq N\)</span>;</li>
+<li>Observation Probabilities: <span class="math">\(b_j(k)=p(o_t=k|q_t=j)~1 \leq j \leq N, 1 \leq k \leq M\)</span>.</li>
+</ul>
+<p>The entire model can be characterized by <span class="math">\(\Phi=(A,B,\pi)\)</span>, where <span class="math">\(A=\{a_{ij}\}\)</span>, <span class="math">\(B=\{b_j(k)\}\)</span> and <span class="math">\(\pi=\{\pi_i\}\)</span>. The states are "hidden", since they are not directly observable, but reflected in observations with uncertainty.</p>
+<h3>Three Basic Problems for HMMs<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup></h3>
+<p>There are three basic problems that are very important to real-world applications of HMMs:</p>
+<h4>Problem 1: Evaluation Problem</h4>
+<blockquote>
+<p>Given the observation sequence <span class="math">\(O=o_1o_2...o_T\)</span> and a model <span class="math">\(\Phi=(A,B,\pi)\)</span>, how to efficiently compute the probability of the observation sequence given the model, i.e., <span class="math">\(p(O|\Phi)\)</span>?</p>
+</blockquote>
+<p>Let
 </p>
 <div class="math">\begin{equation}
-\max_{\boldsymbol\theta}{\ln{p(\textbf{X}|\boldsymbol\theta)}}=\max_{\boldsymbol\theta}{\ln{\sum_{\textbf{Z}}{p(\textbf{X},\textbf{Z}|\boldsymbol\theta)}}}=\max_{\boldsymbol\theta}{\ln{\sum_{\textbf{Z}}{p(\textbf{X}|\textbf{Z},\boldsymbol\theta)p(\textbf{Z}|\boldsymbol\theta)}}}.
+\alpha_t(i)=p(o_1o_2...o_t,q_t=i|\Phi)
 \end{equation}</div>
 <p>
-Unfortunately, the problem above is not directly tractable, since we do not have any prior knowledge on the missing observations <span class="math">\(\textbf{Z}\)</span>.</p>
-<p>The EM algorithm aims to solve the problem above by starting with a guess on <span class="math">\(\boldsymbol\theta=\boldsymbol\theta_{0}\)</span> and then iteratively applying the two steps as indicated below:</p>
-<ul>
-<li><em>Expectation Step (E Step):</em> Calculate the log likelihood with respect to <span class="math">\(\boldsymbol\theta\)</span> given <span class="math">\(\boldsymbol\theta_{t}\)</span> by
+denote the probability that the state is <span class="math">\(i\)</span> at time <span class="math">\(t\)</span> and we have a sequence of observations <span class="math">\(o_1o_2...o_t\)</span>. The evaluation problem can be solved by the forward algorithm as illustrated below:</p>
+<ol>
+<li>Base case: 
 <div class="math">\begin{equation}
-\mathcal{L}(\boldsymbol\theta|\boldsymbol\theta_{t})=\ln{\sum_{\textbf{Z}}{p(\textbf{X}|\textbf{Z},\boldsymbol\theta_{t})p(\textbf{Z}|\boldsymbol\theta_{t})}};
+\alpha_1(i)=p(o_1,q_1=i|\Phi)=p(o_1|q_1=i,\Phi)p(q_1=i|\Phi)=\pi_ib_i(o_1),~1 \leq i \leq N;
 \end{equation}</div>
 </li>
-<li><em>Maximization Step (M Step):</em> Find the parameter vector that maximizes the log likelihood above and then update it as
+<li>Induction:
 <div class="math">\begin{equation}
-\theta_{t+1}={\arg \, \max}_{\theta}{\mathcal{L}(\boldsymbol\theta|\boldsymbol\theta_{t})}.
+\alpha_{t+1}(j)=\left[\sum_{i=1}^N{\alpha_{t}(i)a_{ij}}\right]b_j(o_{t+1}),~1 \leq j \leq N;
 \end{equation}</div>
 </li>
-</ul>
-<p>There are two things that should be noted here:</p>
-<ul>
-<li>There are two categories of EM: <em>hard</em> EM and <em>soft</em> EM. The algorithm illustrated above is soft EM, because the log likelihood in the E step is weighted upon all possible <span class="math">\(\textbf{Z}\)</span> with their probabilities. While in hard EM, instead of using weighted average, we simply select the most probable <span class="math">\(\textbf{Z}\)</span> and then move forward. The <a href="https://en.wikipedia.org/wiki/K-means_clustering">k-means algorithm</a> is a good example of hard EM algorithm.</li>
-<li>The EM algorithm typically converges to a local optimum, and <em>cannot</em> guarantee global optimum. With this being said, the solution might differ with different initialization, and it is possibly helpful to try more than one initialization when applying EM practically.</li>
-</ul>
-<h3>Gaussian Mixture Model (GMM)</h3>
-<p>In the motivating example, a GMM with two Gaussian distributions was introduced. Here we are going to extend it to a general case with <span class="math">\(K\)</span> Gaussian distributions, and the data points will be generalized to be multidimensional. At the same time, we will discuss how it can be used for clustering.</p>
-<p>Given a data set containing <span class="math">\(N\)</span> data points, <span class="math">\(\mathcal{D}=\{\textbf{x}_1,\textbf{x}_2,...,\textbf{x}_N\}\)</span>, in which each data point is a <span class="math">\(M\)</span>-dimensional column vector and comes from one of <span class="math">\(K\)</span> Gaussian distributions. Here we will introduce <span class="math">\(\mathcal{Z}=\{z_1,z_2,...,z_N\}\)</span> with <span class="math">\(z_i\in\{1,2,...,K\}\)</span> as latent (hidden) variables to represent the cluster membership of the data points in <span class="math">\(\mathcal{D}\)</span>. The <span class="math">\(K\)</span> Gaussian distributions are characterized by <span class="math">\(\mathcal{N}(\boldsymbol\mu_j,\boldsymbol\Sigma_j)\)</span> for <span class="math">\(j=1,2,...,K\)</span>, and the <span class="math">\(j\)</span>th distribution has a weight of <span class="math">\(\pi_j\)</span> accounted in the overall distribution. Let us first try to map this GMM model to the EM algorithm component by component:</p>
-<ul>
-<li><span class="math">\(\mathcal{D}\)</span> is the observed data;</li>
-<li><span class="math">\(\mathcal{Z}\)</span> is the missing observations;</li>
-<li><span class="math">\(\boldsymbol\mu_j\)</span>, <span class="math">\(\boldsymbol\Sigma_j\)</span> and <span class="math">\(\pi_j\)</span> are the unknown model parameters.</li>
-</ul>
-<p>Following the EM algorithm, we will start with a guess on the unknown parameters, and then iteratively applying E step and M step until convergence. In the E step, we calculate the log likelihood based on given model parameters by
-</p>
-<div class="math">\begin{align}
-\begin{aligned}
-LL&amp;=\ln{p(\textbf{x}_1,\textbf{x}_2,...,\textbf{x}_N)}\\
-&amp;=\ln{\prod_{i=1}^{N}{p(\textbf{x}_i)}}\\
-&amp;=\ln{\prod_{i=1}^{N}{\sum_{j=1}^{K}{p(z_i=j)p(\textbf{x}_i|z_i=j)}}}\\
-&amp;=\sum_{i=1}^{N}{\ln\left(\sum_{j=1}^{K}{\pi_j\mathcal{N}(\textbf{x}_i|\boldsymbol\mu_j,\boldsymbol\Sigma_j)}\right)}.
-\end{aligned}
-\end{align}</div>
-<p>In the M step, we maximize the log likelihood by solving the optimization problem below:
-</p>
-<div class="math">\begin{align}
-\begin{aligned}
-\max_{\boldsymbol\mu_j,\boldsymbol\Sigma_j,\pi_j}~~&amp;{LL}\\
-&amp;s.t.~\sum_{j=1}^{K}{\pi_j}=1.
-\end{aligned}
-\end{align}</div>
-<p>
-We can apply Lagrange multiplier to solve the problem above. Let
+<li>Termination:
+<div class="math">\begin{equation}
+p(O|\Phi)=\sum_{i=1}^N{\alpha_T(i)},
+\end{equation}</div>
+<div class="math">\begin{equation}
+p(q_T=i|O,\Phi)=\frac{\alpha_T(i)}{\sum_{j=1}^N{\alpha_T(j)}}.
+\end{equation}</div>
+</li>
+</ol>
+<p>The algorithm above essentially applies dynamic programming, and its complexity is <span class="math">\(O(N^2T)\)</span>.</p>
+<h4>Problem 2: Decoding Problem</h4>
+<blockquote>
+<p>Given the observation sequence <span class="math">\(O=o_1o_2...o_T\)</span> and a model <span class="math">\(\Phi=(A,B,\pi)\)</span>, how to choose the "best" state sequence <span class="math">\(Q=q_1q_2...q_T\)</span> (the most probable path) in terms of how good it explains the observations?</p>
+</blockquote>
+<p>Define
 </p>
 <div class="math">\begin{equation}
-L=\sum_{i=1}^{N}{\ln\left(\sum_{j=1}^{K}{\pi_j\mathcal{N}(\textbf{x}_i|\boldsymbol\mu_j,\boldsymbol\Sigma_j)}\right)}-\lambda\left(\sum_{j=1}^{K}{\pi_j}-1\right),
+v_t(i)=\max_{q_1q_2...q_{t-1}}{p(q_1q_2...q_{t-1},q_t=i,o_1o_2...o_t|\Phi)}
 \end{equation}</div>
 <p>
-where <span class="math">\(\lambda\)</span> is the Lagrange multiplier. Taking partial derivatives and setting them to zero, we can obtain the optimal parameters as below:
+as the best state sequence through which the state arrives at <span class="math">\(i\)</span> at time <span class="math">\(t\)</span> with a sequence of observations <span class="math">\(o_1o_2...o_t\)</span>. The decoding problem can be solved by the Viterbi algorithm as illustrated below:</p>
+<ol>
+<li>Base case: 
+<div class="math">\begin{equation}
+v_1(i)=p(q_1=i,o_1|\Phi)=p(o_1|q_1=i,\Phi)p(q_1=i|\Phi)=\pi_ib_i(o_1),~1 \leq i \leq N;
+\end{equation}</div>
+</li>
+<li>Induction:
+<div class="math">\begin{equation}
+v_{t+1}(j)=\left[\max_i{v_{t}(i)a_{ij}}\right]b_j(o_{t+1}),~1 \leq j \leq N,
+\end{equation}</div>
+in which the optimal <span class="math">\(i\)</span> from the maximization should be stored properly for backtracking;</li>
+<li>Termination: The best state sequence can be determined by first finding the optimal final state
+<div class="math">\begin{equation}
+q_T=\max_i{v_T(i)},
+\end{equation}</div>
+and then backtracking all the way to the initial state.</li>
+</ol>
+<p>The algorithm above also applies dynamic programming, and its complexity is <span class="math">\(O(N^2T)\)</span> as well.</p>
+<h4>Problem 3: Model Learning</h4>
+<blockquote>
+<p>Given the observation sequence <span class="math">\(O=o_1o_2...o_T\)</span>, how to find the model <span class="math">\(\Phi=(A,B,\pi)\)</span> that maximizes <span class="math">\(p(O|\Phi)\)</span>?</p>
+</blockquote>
+<p>A general maximum likelihood (ML) learning approach could determine the optimal <span class="math">\(\Phi\)</span> as
 </p>
-<div class="math">\begin{equation} \label{Eqn:Maximization_1}
-\boldsymbol\mu_j=\frac{\sum_{i=1}^{N}{\gamma_{ij}}\textbf{x}_i}{\sum_{i=1}^{N}{\gamma_{ij}}},
-\end{equation}</div>
-<div class="math">\begin{equation} \label{Eqn:Maximization_2}
-\boldsymbol\Sigma_j=\frac{\sum_{i=1}^{N}{\gamma_{ij}}(\textbf{x}_i-\boldsymbol\mu_j)(\textbf{x}_i-\boldsymbol\mu_j)^T}{\sum_{i=1}^{N}{\gamma_{ij}}},
-\end{equation}</div>
-<div class="math">\begin{equation} \label{Eqn:Maximization_3}
-\pi_j=\frac{1}{N}{\sum_{i=1}^{N}{\gamma_{ij}}},
+<div class="math">\begin{equation}
+\hat{\Phi}=\max_{\Phi}{p(O|\Phi)}.
 \end{equation}</div>
 <p>
-where <span class="math">\(\gamma_{ij}=p(z_i=j|\textbf{x}_i)\)</span> is the cluster membership, which can be calculated using Bayes theorem,
+It is much easier to perform supervised learning, where the true state are tagged to each observation. Given <span class="math">\(V\)</span> training sequences in total, the model parameters can be estimated as
+</p>
+<div class="math">\begin{equation} \label{Eqn:Supervised_Learning}
+\hat{a}_{ij}=\frac{Count(q:i \rightarrow j)}{Count(q:i)},~~\hat{b}_j(k)=\frac{Count(q:j,o:k)}{Count(q:j)},~~\hat{\pi}_i=\frac{Count(q_1=i)}{V}.
+\end{equation}</div>
+<p>It becomes a little bit tricky for unsupervised learning, where the true state are not tagged. To facilitate our model learning, we need to first introduce the following definition/calculation:
+</p>
+<div class="math">\begin{equation} \label{Eqn:Episilon}
+\varepsilon_t(i,j)=p(q_t=i,q_{t+1}=j|O,\Phi)=\frac{p(q_t=i,q_{t+1}=j,O|\Phi)}{p(O|\Phi)}=\frac{\alpha_t(i)a_{ij}b_j(o_{t+1})\beta_{t+1}(j)}{\sum_{i=1}^N{\alpha_T(i)}},
+\end{equation}</div>
+<p>
+where <span class="math">\(p(O|\Phi)\)</span> is exactly Problem 1 we have yet talked about. <span class="math">\(\beta_{t+1}(j)\)</span> can be calculated using the backward algorithm, which is very similar to the forward algorithm in Problem 1 to calculate <span class="math">\(\alpha_t(i)\)</span> except the difference in the direction of calculation. Following (\ref{Eqn:Episilon}), we further introduce
+</p>
+<div class="math">\begin{equation} \label{Eqn:Gamma}
+\gamma_t(i)=p(q_t=i|O,\Phi)=\sum_{j=1}^N{\varepsilon_t(i,j)}.
+\end{equation}</div>
+<p>
+Then the model parameters can be recomputed as
 </p>
 <div class="math">\begin{equation}
 \begin{split}
-\gamma_{ij}&amp;=p(z_i=j|\textbf{x}_i)\\
-&amp;=\frac{p(z_i=j)p(\textbf{x}_i|z_i=j)}{\sum_{j=1}^{K}{p(z_i=j)p(\textbf{x}_i|z_i=j)}}\\
-&amp;=\frac{\pi_j\mathcal{N}(\textbf{x}_i|\boldsymbol\mu_j,\boldsymbol\Sigma_j)}{\sum_{j=1}^{K}{\pi_j\mathcal{N}(\textbf{x}_i|\boldsymbol\mu_j,\boldsymbol\Sigma_j)}}.
+\hat{a}_{ij}&amp;=\frac{Expected~number~of~transitions~from~state~i~to~j}{Expected~number~of~transitions~from~state~i}\\
+&amp;=\frac{\sum_{t=1}^{T-1}{\varepsilon_t(i,j)}}{\sum_{t=1}^{T-1}{\gamma_t(i)}},
 \end{split}
 \end{equation}</div>
-<p>To summarize, the GMM model can be learned using EM algorithm as in the following steps:</p>
+<div class="math">\begin{equation}
+\begin{split}
+\hat{b}_j(k)&amp;=\frac{Expected~number~of~times~in~state~j~and~observing~k}{Expected~number~of~times~in~state~j}\\
+&amp;=\frac{\sum_{t=1,~s.t.~o_t=k}^{T}{\gamma_t(j)}}{\sum_{t=1}^{T}{\gamma_t(j)}},
+\end{split}
+\end{equation}</div>
+<div class="math">\begin{equation}
+\begin{split}
+\hat{\pi}_i&amp;=Expected~number~of~times~in~state~i~at~time~t=1\\
+&amp;=\gamma_1(i).
+\end{split}
+\end{equation}</div>
+<p>Now we are ready to apply the <a href="20160312 - EM and GMM.html">expectation maximization (EM) algorithm</a> for HMM learning. More specifically:</p>
 <ol>
-<li>Initialize <span class="math">\(\boldsymbol\mu_j\)</span>, <span class="math">\(\boldsymbol\Sigma_j\)</span> and <span class="math">\(\pi_j\)</span> for <span class="math">\(j=1,2,...,K\)</span>;</li>
-<li>Repeat the following two steps until the log likelihood converges:<ul>
-<li>E Step: Estimate cluster membership <span class="math">\(\gamma_{ij}\)</span> by the equation right above for all data point <span class="math">\(x_i\)</span> and cluster <span class="math">\(z_i=j\)</span>;</li>
-<li>M Step: Maximize the log likelihood and update the model parameters by (\ref{Eqn:Maximization_1})-(\ref{Eqn:Maximization_3}) based on cluster membership <span class="math">\(\gamma_{ij}\)</span>.</li>
+<li>Initialize the HMM, <span class="math">\(\Phi\)</span>;</li>
+<li>Repeat the two steps below until convergence:<ul>
+<li>E Step: Given observations <span class="math">\(o_1o_2...o_T\)</span> and the model <span class="math">\(\Phi\)</span>, compute <span class="math">\(\varepsilon_t(i,j)\)</span> by (\ref{Eqn:Episilon}) and <span class="math">\(\gamma_t(i)\)</span> by (\ref{Eqn:Gamma});</li>
+<li>M Step: Update the model <span class="math">\(\Phi\)</span> by recomputing parameters using the three equations right above.</li>
 </ul>
 </li>
 </ol>
+<h3>Part of Speech (POS) Tagging</h3>
+<p>In natural language processing, part of speech (POS) tagging is to associate with each word in a sentence a lexical tag. As an example, Janet (NNP) will (MD) back (VB) the (DT) bill (NN), in which each POS tag describes what its corresponding word is about. In this particular example, "VB" tells that "back" is a verb, and "NN" tells that "bill" is a noun, etc.</p>
+<p>POS tagging is very useful, because it is usually the first step of many practical tasks, e.g., speech synthesis, grammatical parsing and information extraction. For instance, if we want to pronounce the word "record" correctly, we need to first learn from context if it is a noun or verb and then determine where the stress is in its pronunciation. A similar argument applies to grammatical parsing and information extraction as well.</p>
+<p>We need to do some preprocessing before performing POS tagging using HMM. First, because the vocabulary size could be very large while most of the words are not frequently used, we replace each low-frequency word with a special word "UNKA". This is very helpful to reduce the vocabulary size, and thus reduce the memory cost on storing the probability matrix. Second, for each sentence, we add two tags to represent sentence boundaries, e.g., "START" and "END".</p>
+<p>Now we are ready to apply HMM to perform POS tagging. The model can be characterized by:</p>
+<ul>
+<li>Time: length of each sentence;</li>
+<li><span class="math">\(N\)</span> States: POS tags, e.g., 45 POS tags from Penn Treebank;</li>
+<li><span class="math">\(M\)</span> Observations: vocabulary (compressed by replacing low-frequency words with "UNKA");</li>
+<li>Initial Probabilities: probability of each tag associated to the first word;</li>
+<li>Transition Probabilities: <span class="math">\(p(t_{i+1}|t_i)\)</span>, where <span class="math">\(t_i\)</span> represents the tag for the <span class="math">\(i\)</span>th word;</li>
+<li>Observation Probabilities: <span class="math">\(p(w|t)\)</span>, where <span class="math">\(t\)</span> stands for a tag and <span class="math">\(w\)</span> stands for a word.</li>
+</ul>
+<p>Once we finish training the model, e.g., under supervised learning by (\ref{Eqn:Supervised_Learning}), we will then be able to tag new sentences applying the Viterbi algorithm as previously illustrated in Problem 2 for HMM. To see details about implementing POS tagging using HMM, <a href="https://github.com/stlong0521/hmm-pos">click here</a> for demo codes.</p>
 <h3>References</h3>
 <div class="footnote">
 <hr />
 <ol>
 <li id="fn:1">
-<p>Wikipedia, <a href="https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm"><em>Expectation–maximization algorithm</em></a>, accessed on Mar 12, 2016.&#160;<a class="footnote-backref" href="#fnref:1" rev="footnote" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+<p>L. R. Rabiner, "A tutorial on hidden Markov models and selected applications in speech recognition," in Proceedings of the IEEE, vol. 77, no. 2, pp. 257-286, Feb 1989.&#160;<a class="footnote-backref" href="#fnref:1" rev="footnote" title="Jump back to footnote 1 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
@@ -233,6 +286,25 @@ where <span class="math">\(\gamma_{ij}=p(z_i=j|\textbf{x}_i)\)</span> is the clu
     </div> -->
 
     <div class='article'>
+        <a href="https://stlong0521.github.io/20160319 - HMM and POS.html"><h2>Hidden Markov Model and Part of Speech Tagging</h2></a>
+        <div class= "well small"> Sat 19 Mar 2016
+
+by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
+ 
+
+
+ 
+    Tags <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a> <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  </div>
+        <div class="summary"><p>In a Markov model, we generally assume that the states are directly observable or one state corresponds to one observation/event only. However, this is not always true. A good example would be: in speech recognition, we are supposed to identify a sequence of words given a sequence of utterances ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20160319 - HMM and POS.html">read more</a></div>
+    </div>
+	
+
+ 
+        
+
+ 
+
+    <div class='article'>
         <a href="https://stlong0521.github.io/20160312 - EM and GMM.html"><h2>Expectation Maximization Algorithm and Gaussian Mixture Model</h2></a>
         <div class= "well small"> Sat 12 Mar 2016
 
@@ -243,8 +315,8 @@ by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.htm
  
     Tags <a href="https://stlong0521.github.io/tag/data-science.html">Data Science</a> <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  </div>
         <div class="summary"><p>In statistical modeling, it is possible that some observations are just missing. For example, when flipping two biased coins with unknown biases, we only have a sequence of observations on heads and tails, but forgot to record which coin each observation comes from. In this case, the conventional maximum likelihood ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20160312 - EM and GMM.html">read more</a></div>
-    </div>
-	
+    </div>	
+				
 
  
         

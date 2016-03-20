@@ -60,138 +60,171 @@
 
 <!--     <div class='article'>
         <div class="content-title">
-            <a href="https://stlong0521.github.io/20160305 - Missing Word.html"><h1>Locating and Filling Missing Words in Sentences</h1></a>
-Sat 05 Mar 2016
+            <a href="https://stlong0521.github.io/20160319 - HMM and POS.html"><h1>Hidden Markov Model and Part of Speech Tagging</h1></a>
+Sat 19 Mar 2016
 
 by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
  
 
 
  
-    Tags <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a>  
+    Tags <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a> <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  
         </div>
         
-        <div><p>There has been many occasions that we have incomplete sentences that are needed to completed. One example is that in speech recognition noisy environment can lead to unrecognizable words, but we still hope to recover and understand the complete sentence (e.g., by inference); another example is sentence completion questions that appear in language tests (e.g., SAT, GRE, etc.).</p>
-<h3>What are Exactly the Problem?</h3>
-<p>Generally, the problem we are aiming to solve is locating and filling any missing words in incomplete sentences. However, this problem seems too ambitious so far, and we direct ourselves to a simplified version of this problem. To simplify the problem, we assume that there is only one missing word in a sentence, and the missing word is neither the first word nor the last word of the sentence. This problem originally comes from <a href="https://www.kaggle.com/c/billion-word-imputation">here</a>.</p>
-<h3>Locating the Missing Word</h3>
-<p>Two approaches are presented here so as to locate the missing word.</p>
-<h4>N-gram Model</h4>
-<p>For a given training data set, define <span class="math">\(C(w_1,w_2)\)</span> as the number of occurrences of the bigram pattern <span class="math">\((w_1,w_2)\)</span>, and <span class="math">\(C(w_1,w,w_2)\)</span> the number of occurrences of the trigram pattern <span class="math">\((w_1,w,w_2)\)</span>. Then, the number of occurrences of the pattern, where there is one and only one word between <span class="math">\(w_1\)</span> and <span class="math">\(w_2\)</span>, can be calculated by
+        <div><p>In a Markov model, we generally assume that the states are directly observable or one state corresponds to one observation/event only. However, this is not always true. A good example would be: in speech recognition, we are supposed to identify a sequence of words given a sequence of utterances, in which case the states (words) are not directly observable and one single state (word) could have different observations (utterances). This is a perfect example that could be treated as a hidden Markov model (HMM), by which the hidden states can be inferred from the observations.</p>
+<h3>Elements of a Hidden Markov Model (HMM)<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup></h3>
+<p>A hidden Markov model, <span class="math">\(\Phi\)</span>, typically includes the following elements:</p>
+<ul>
+<li>Time: <span class="math">\(t=\{1,2,...,T\}\)</span>;</li>
+<li><span class="math">\(N\)</span> States: <span class="math">\(Q=\{1,2,...,N\}\)</span>;</li>
+<li><span class="math">\(M\)</span> Observations: <span class="math">\(O=\{1,2,...,M\}\)</span>;</li>
+<li>Initial Probabilities: <span class="math">\(\pi_i=p(q_1=i),~1 \leq i \leq N\)</span>;</li>
+<li>Transition Probabilities: <span class="math">\(a_{ij}=p(q_{t+1}=j|q_t=i),~1 \leq i,j \leq N\)</span>;</li>
+<li>Observation Probabilities: <span class="math">\(b_j(k)=p(o_t=k|q_t=j)~1 \leq j \leq N, 1 \leq k \leq M\)</span>.</li>
+</ul>
+<p>The entire model can be characterized by <span class="math">\(\Phi=(A,B,\pi)\)</span>, where <span class="math">\(A=\{a_{ij}\}\)</span>, <span class="math">\(B=\{b_j(k)\}\)</span> and <span class="math">\(\pi=\{\pi_i\}\)</span>. The states are "hidden", since they are not directly observable, but reflected in observations with uncertainty.</p>
+<h3>Three Basic Problems for HMMs<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup></h3>
+<p>There are three basic problems that are very important to real-world applications of HMMs:</p>
+<h4>Problem 1: Evaluation Problem</h4>
+<blockquote>
+<p>Given the observation sequence <span class="math">\(O=o_1o_2...o_T\)</span> and a model <span class="math">\(\Phi=(A,B,\pi)\)</span>, how to efficiently compute the probability of the observation sequence given the model, i.e., <span class="math">\(p(O|\Phi)\)</span>?</p>
+</blockquote>
+<p>Let
 </p>
 <div class="math">\begin{equation}
-D(w_1,w_2)=\sum_{w\in{V}}C(w_1,w,w_2),
+\alpha_t(i)=p(o_1o_2...o_t,q_t=i|\Phi)
 \end{equation}</div>
 <p>
-where <span class="math">\(V\)</span> is the vocabulary.</p>
-<p>Consider a particular location, <span class="math">\(l\)</span>, of an incomplete sentence of length <span class="math">\(L\)</span>, and let <span class="math">\(w_l\)</span> be the <span class="math">\(l\)</span>th word in the sentence. <span class="math">\(D(w_{l-1},w_{l})\)</span> would be the number of positive votes from the training data set for missing word at this location, while <span class="math">\(C(w_{l-1},w_{l})\)</span> would be correspondingly the number of negative votes. We define the score indicating there is a missing word at location <span class="math">\(l\)</span> as
-</p>
-<div class="math">\begin{equation} \label{Eqn:Score}
-S_l=\frac{D(w_{l-1},w_{l})^{1+\gamma}}{C(w_{l-1},w_{l})+D(w_{l-1},w_{l})}-\frac{C(w_{l-1},w_{l})^{1+\gamma}}{C(w_{l-1},w_{l})+D(w_{l-1},w_{l})},
+denote the probability that the state is <span class="math">\(i\)</span> at time <span class="math">\(t\)</span> and we have a sequence of observations <span class="math">\(o_1o_2...o_t\)</span>. The evaluation problem can be solved by the forward algorithm as illustrated below:</p>
+<ol>
+<li>Base case: 
+<div class="math">\begin{equation}
+\alpha_1(i)=p(o_1,q_1=i|\Phi)=p(o_1|q_1=i,\Phi)p(q_1=i|\Phi)=\pi_ib_i(o_1),~1 \leq i \leq N;
 \end{equation}</div>
-<p>
-where <span class="math">\(\gamma\)</span> is a small positive constant. Hence, the missing word location can be identified by
+</li>
+<li>Induction:
+<div class="math">\begin{equation}
+\alpha_{t+1}(j)=\left[\sum_{i=1}^N{\alpha_{t}(i)a_{ij}}\right]b_j(o_{t+1}),~1 \leq j \leq N;
+\end{equation}</div>
+</li>
+<li>Termination:
+<div class="math">\begin{equation}
+p(O|\Phi)=\sum_{i=1}^N{\alpha_T(i)},
+\end{equation}</div>
+<div class="math">\begin{equation}
+p(q_T=i|O,\Phi)=\frac{\alpha_T(i)}{\sum_{j=1}^N{\alpha_T(j)}}.
+\end{equation}</div>
+</li>
+</ol>
+<p>The algorithm above essentially applies dynamic programming, and its complexity is <span class="math">\(O(N^2T)\)</span>.</p>
+<h4>Problem 2: Decoding Problem</h4>
+<blockquote>
+<p>Given the observation sequence <span class="math">\(O=o_1o_2...o_T\)</span> and a model <span class="math">\(\Phi=(A,B,\pi)\)</span>, how to choose the "best" state sequence <span class="math">\(Q=q_1q_2...q_T\)</span> (the most probable path) in terms of how good it explains the observations?</p>
+</blockquote>
+<p>Define
 </p>
 <div class="math">\begin{equation}
-\hat{l}={\arg \, \max}_{1 \leq l \leq L-1} S_l.
-\end{equation}</div>
-<p>Note that in (\ref{Eqn:Score}), if we set <span class="math">\(\gamma=0\)</span>, the left part would be exactly the percentage of positive votes for missing word at that location, and the right part is the percentage of negative votes. It seems a fairly reasonable score, then <em>why do we still need a positive <span class="math">\(\gamma\)</span></em>? The underlying reason is that intuitively the more number of votes for a particular decision, the more confident we are on that decision. This trend is reflected in a positive <span class="math">\(\gamma\)</span>, which can be viewed as <em>sparse vote penalty</em> and is useful in breaking ties in the missing word location voting. That is, if we have exactly the same ratio of positive votes relative to negative votes for two candidate locations, e.g., 80 positive votes v.s. 20 negative votes for location A, and 8 positive votes v.s. 2 negative votes for location B, we would believe that location A is more likely to be the missing word location compared with location B.</p>
-<h4>Word Distance Statistics (WDS)</h4>
-<p>In view of the fact that the statistics of the two words immediately adjacent to a given location contribute a lot in deciding whether the location has a word missing, we tentatively guess that all the words within a window centered at that location would more or less contribute some information as well. As a result, we introduce the concept of word distance statistics (WDS).</p>
-<p>More specifically, we use <span class="math">\(\widetilde{C}(w_1,w_2,m)\)</span> to denote the number of occurrences of the pattern, where there is exactly <span class="math">\(m\)</span> words between <span class="math">\(w_1\)</span> and <span class="math">\(w_2\)</span>, i.e., the word distance of <span class="math">\(w_1\)</span> and <span class="math">\(w_2\)</span> is <span class="math">\(m\)</span>. For a given location <span class="math">\(l\)</span> in an incomplete sentence and a word window size <span class="math">\(W\)</span>, we are interested in the word distance statistics of each word pair, in which one word <span class="math">\(w_i\)</span> is on the left of the location <span class="math">\(l\)</span>, and the other word <span class="math">\(w_j\)</span> is on the right, as illustrated in the figure below.</p>
-<p><img src="/figures/20160305/WDS.png" alt="WDS" width="400" height="150"></p>
-<p>Formally, for any <span class="math">\(l-W/2 \leq i \leq l-1\)</span> and <span class="math">\(l \leq j \leq l+W/2-1\)</span>, <span class="math">\(\widetilde{C}(w_i,w_j,j-i)\)</span> would be the number of positive votes for missing word at this location, while <span class="math">\(\widetilde{C}(w_i,w_j,j-i-1)\)</span> is the number of negative votes. Applying the idea in (\ref{Eqn:Score}), for each word pair <span class="math">\((w_i,w_j)\)</span>, we extract its feature as the score indicating there is a missing word at location <span class="math">\(l\)</span>, i.e.,
-</p>
-<div class="math">\begin{equation} \label{Eqn:ScoreGeneralized}
-S_l(i,j)=\frac{\widetilde{C}(w_i,w_j,j-i)^{1+\gamma}}{\widetilde{C}(w_i,w_j,j-i)+\widetilde{C}(w_i,w_j,j-i-1)}-\frac{\widetilde{C}(w_i,w_j,j-i-1)^{1+\gamma}}{\widetilde{C}(w_i,w_j,j-i)+\widetilde{C}(w_i,w_j,j-i-1)}.
+v_t(i)=\max_{q_1q_2...q_{t-1}}{p(q_1q_2...q_{t-1},q_t=i,o_1o_2...o_t|\Phi)}
 \end{equation}</div>
 <p>
-As a special example, let <span class="math">\(i=l-1\)</span> and <span class="math">\(j=l\)</span>, (\ref{Eqn:ScoreGeneralized}) would be reduced to (\ref{Eqn:Score}).</p>
-<p>To find the missing word location, we need to assign different weights to the extracted features, <span class="math">\(S_l(i,j)\)</span>. Then, the missing word location can be determined by
-</p>
-<div class="math">\begin{equation} \label{Eqn:LocationDetermination}
-\hat{l}={\arg \, \max}_{1 \leq l \leq L-1} \sum_{l-\frac{W}{2} \leq i \leq l-1}\sum_{l \leq j \leq l+\frac{W}{2}-1}v(i,j)S_l(i,j),
+as the best state sequence through which the state arrives at <span class="math">\(i\)</span> at time <span class="math">\(t\)</span> with a sequence of observations <span class="math">\(o_1o_2...o_t\)</span>. The decoding problem can be solved by the Viterbi algorithm as illustrated below:</p>
+<ol>
+<li>Base case: 
+<div class="math">\begin{equation}
+v_1(i)=p(q_1=i,o_1|\Phi)=p(o_1|q_1=i,\Phi)p(q_1=i|\Phi)=\pi_ib_i(o_1),~1 \leq i \leq N;
 \end{equation}</div>
-<p>
-where the weight, <span class="math">\(v(i,j)\)</span>, should be monotonically decreasing with respect to <span class="math">\(|j-i|\)</span>.</p>
-<h3>Filling the Missing Word</h3>
-<p>To find the most probable word in the given missing word location, we take into account five conditional probabilities, as shown in the table below, to explore the statistical connection between the candidate words and the surrounding words at the missing word location. Ultimately, the most probable missing word can be determined by
+</li>
+<li>Induction:
+<div class="math">\begin{equation}
+v_{t+1}(j)=\left[\max_i{v_{t}(i)a_{ij}}\right]b_j(o_{t+1}),~1 \leq j \leq N,
+\end{equation}</div>
+in which the optimal <span class="math">\(i\)</span> from the maximization should be stored properly for backtracking;</li>
+<li>Termination: The best state sequence can be determined by first finding the optimal final state
+<div class="math">\begin{equation}
+q_T=\max_i{v_T(i)},
+\end{equation}</div>
+and then backtracking all the way to the initial state.</li>
+</ol>
+<p>The algorithm above also applies dynamic programming, and its complexity is <span class="math">\(O(N^2T)\)</span> as well.</p>
+<h4>Problem 3: Model Learning</h4>
+<blockquote>
+<p>Given the observation sequence <span class="math">\(O=o_1o_2...o_T\)</span>, how to find the model <span class="math">\(\Phi=(A,B,\pi)\)</span> that maximizes <span class="math">\(p(O|\Phi)\)</span>?</p>
+</blockquote>
+<p>A general maximum likelihood (ML) learning approach could determine the optimal <span class="math">\(\Phi\)</span> as
 </p>
 <div class="math">\begin{equation}
-\hat{w}={\arg \, \max}_{w\in{B}} \sum_{1 \leq i \leq 5} v_iP_i,
+\hat{\Phi}=\max_{\Phi}{p(O|\Phi)}.
 \end{equation}</div>
 <p>
-where <span class="math">\(B\)</span> is the candidate word space (detailed <a href="https://github.com/stlong0521/missing-word/blob/master/Project%20Report.pdf">here</a>), and the weight <span class="math">\(v_i\)</span> is used to reflect the importance of each conditional probability in contributing to the final score.</p>
-<p><img src="/figures/20160305/CondProb.png" alt="WDS" width="400" height="150"></p>
-<p>Note that in the table above, "*" denotes an arbitrary word.</p>
-<h3>Experimental Results</h3>
-<p>The training data contains <span class="math">\(30,301,028\)</span> complete sentences, of which the average sentence length is approximately <span class="math">\(25\)</span>. In the vocabulary with a size of <span class="math">\(2,425,337\)</span>, <span class="math">\(14,216\)</span> words that have occurred in at least <span class="math">\(0.1\%\)</span> of total sentences are labeled as high-frequency words, and the remaining <span class="math">\(58,417,315\)</span> words are labeled as 'UNKA'. To perform the cross validation, in our experiments, the training data is splitted into two part, TRAIN and DEV. The TRAIN set is used to train our models, and the DEV set is applied to test our models.</p>
-<h4>Missing Word Location</h4>
-<p>The table below shows the estimation accuracy of the missing word locations for the two proposed approaches, N-gram and WDS. For comparison, we list the corresponding probabilities by chance as well. Each entry shows the probabilities that the correct location is included in the ranked candidate location list returned by each approach, where the list size varies from <span class="math">\(1\)</span> to <span class="math">\(10\)</span>. The sparse vote penalty coefficient, <span class="math">\(\gamma\)</span>, is set to 0.01. In the WDS approach, we consider a word window size <span class="math">\(W=4\)</span>, i.e., four pairs of words are taken into account.</p>
-<table class="table table-striped table-bordered table-hover">
-<thead>
-<tr>
-<th align="center"></th>
-<th align="center">Top 1</th>
-<th align="center">Top 2</th>
-<th align="center">Top 3</th>
-<th align="center">Top 5</th>
-<th align="center">Top 10</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="center">Chance</td>
-<td align="center">4%</td>
-<td align="center">8%</td>
-<td align="center">12%</td>
-<td align="center">20%</td>
-<td align="center">40%</td>
-</tr>
-<tr>
-<td align="center">N-gram</td>
-<td align="center">51.47%</td>
-<td align="center">63.70%</td>
-<td align="center">71.00%</td>
-<td align="center">80.26%</td>
-<td align="center">91.54%</td>
-</tr>
-<tr>
-<td align="center">WDS</td>
-<td align="center">52.06%</td>
-<td align="center">64.50%</td>
-<td align="center">71.76%</td>
-<td align="center">80.91%</td>
-<td align="center">91.93%</td>
-</tr>
-</tbody>
-</table>
-<h4>Missing Word Filling</h4>
-<p>The table below shows the accuracies of filling the missing word given the location. Each row of the second column shows the probability that the correct word is included in the ranked candidate words list returned by the proposed approach.</p>
-<table class="table table-striped table-bordered table-hover">
-<thead>
-<tr>
-<th align="center"></th>
-<th align="center">Top 1</th>
-<th align="center">Top 2</th>
-<th align="center">Top 3</th>
-<th align="center">Top 5</th>
-<th align="center">Top 10</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="center">Accuracy</td>
-<td align="center">32.15%</td>
-<td align="center">41.49%</td>
-<td align="center">46.23%</td>
-<td align="center">52.02%</td>
-<td align="center">59.15%</td>
-</tr>
-</tbody>
-</table>
-<h3>Acknowledgement</h3>
-<p>I did this project with my partner, <a href="https://zhwa.github.io/">Zhe Wang</a>. To see the codes and/or report, <a href="https://github.com/stlong0521/missing-word">click here</a> for more information.</p>
+It is much easier to perform supervised learning, where the true state are tagged to each observation. Given <span class="math">\(V\)</span> training sequences in total, the model parameters can be estimated as
+</p>
+<div class="math">\begin{equation} \label{Eqn:Supervised_Learning}
+\hat{a}_{ij}=\frac{Count(q:i \rightarrow j)}{Count(q:i)},~~\hat{b}_j(k)=\frac{Count(q:j,o:k)}{Count(q:j)},~~\hat{\pi}_i=\frac{Count(q_1=i)}{V}.
+\end{equation}</div>
+<p>It becomes a little bit tricky for unsupervised learning, where the true state are not tagged. To facilitate our model learning, we need to first introduce the following definition/calculation:
+</p>
+<div class="math">\begin{equation} \label{Eqn:Episilon}
+\varepsilon_t(i,j)=p(q_t=i,q_{t+1}=j|O,\Phi)=\frac{p(q_t=i,q_{t+1}=j,O|\Phi)}{p(O|\Phi)}=\frac{\alpha_t(i)a_{ij}b_j(o_{t+1})\beta_{t+1}(j)}{\sum_{i=1}^N{\alpha_T(i)}},
+\end{equation}</div>
+<p>
+where <span class="math">\(p(O|\Phi)\)</span> is exactly Problem 1 we have yet talked about. <span class="math">\(\beta_{t+1}(j)\)</span> can be calculated using the backward algorithm, which is very similar to the forward algorithm in Problem 1 to calculate <span class="math">\(\alpha_t(i)\)</span> except the difference in the direction of calculation. Following (\ref{Eqn:Episilon}), we further introduce
+</p>
+<div class="math">\begin{equation} \label{Eqn:Gamma}
+\gamma_t(i)=p(q_t=i|O,\Phi)=\sum_{j=1}^N{\varepsilon_t(i,j)}.
+\end{equation}</div>
+<p>
+Then the model parameters can be recomputed as
+</p>
+<div class="math">\begin{equation}
+\begin{split}
+\hat{a}_{ij}&amp;=\frac{Expected~number~of~transitions~from~state~i~to~j}{Expected~number~of~transitions~from~state~i}\\
+&amp;=\frac{\sum_{t=1}^{T-1}{\varepsilon_t(i,j)}}{\sum_{t=1}^{T-1}{\gamma_t(i)}},
+\end{split}
+\end{equation}</div>
+<div class="math">\begin{equation}
+\begin{split}
+\hat{b}_j(k)&amp;=\frac{Expected~number~of~times~in~state~j~and~observing~k}{Expected~number~of~times~in~state~j}\\
+&amp;=\frac{\sum_{t=1,~s.t.~o_t=k}^{T}{\gamma_t(j)}}{\sum_{t=1}^{T}{\gamma_t(j)}},
+\end{split}
+\end{equation}</div>
+<div class="math">\begin{equation}
+\begin{split}
+\hat{\pi}_i&amp;=Expected~number~of~times~in~state~i~at~time~t=1\\
+&amp;=\gamma_1(i).
+\end{split}
+\end{equation}</div>
+<p>Now we are ready to apply the <a href="20160312 - EM and GMM.html">expectation maximization (EM) algorithm</a> for HMM learning. More specifically:</p>
+<ol>
+<li>Initialize the HMM, <span class="math">\(\Phi\)</span>;</li>
+<li>Repeat the two steps below until convergence:<ul>
+<li>E Step: Given observations <span class="math">\(o_1o_2...o_T\)</span> and the model <span class="math">\(\Phi\)</span>, compute <span class="math">\(\varepsilon_t(i,j)\)</span> by (\ref{Eqn:Episilon}) and <span class="math">\(\gamma_t(i)\)</span> by (\ref{Eqn:Gamma});</li>
+<li>M Step: Update the model <span class="math">\(\Phi\)</span> by recomputing parameters using the three equations right above.</li>
+</ul>
+</li>
+</ol>
+<h3>Part of Speech (POS) Tagging</h3>
+<p>In natural language processing, part of speech (POS) tagging is to associate with each word in a sentence a lexical tag. As an example, Janet (NNP) will (MD) back (VB) the (DT) bill (NN), in which each POS tag describes what its corresponding word is about. In this particular example, "VB" tells that "back" is a verb, and "NN" tells that "bill" is a noun, etc.</p>
+<p>POS tagging is very useful, because it is usually the first step of many practical tasks, e.g., speech synthesis, grammatical parsing and information extraction. For instance, if we want to pronounce the word "record" correctly, we need to first learn from context if it is a noun or verb and then determine where the stress is in its pronunciation. A similar argument applies to grammatical parsing and information extraction as well.</p>
+<p>We need to do some preprocessing before performing POS tagging using HMM. First, because the vocabulary size could be very large while most of the words are not frequently used, we replace each low-frequency word with a special word "UNKA". This is very helpful to reduce the vocabulary size, and thus reduce the memory cost on storing the probability matrix. Second, for each sentence, we add two tags to represent sentence boundaries, e.g., "START" and "END".</p>
+<p>Now we are ready to apply HMM to perform POS tagging. The model can be characterized by:</p>
+<ul>
+<li>Time: length of each sentence;</li>
+<li><span class="math">\(N\)</span> States: POS tags, e.g., 45 POS tags from Penn Treebank;</li>
+<li><span class="math">\(M\)</span> Observations: vocabulary (compressed by replacing low-frequency words with "UNKA");</li>
+<li>Initial Probabilities: probability of each tag associated to the first word;</li>
+<li>Transition Probabilities: <span class="math">\(p(t_{i+1}|t_i)\)</span>, where <span class="math">\(t_i\)</span> represents the tag for the <span class="math">\(i\)</span>th word;</li>
+<li>Observation Probabilities: <span class="math">\(p(w|t)\)</span>, where <span class="math">\(t\)</span> stands for a tag and <span class="math">\(w\)</span> stands for a word.</li>
+</ul>
+<p>Once we finish training the model, e.g., under supervised learning by (\ref{Eqn:Supervised_Learning}), we will then be able to tag new sentences applying the Viterbi algorithm as previously illustrated in Problem 2 for HMM. To see details about implementing POS tagging using HMM, <a href="https://github.com/stlong0521/hmm-pos">click here</a> for demo codes.</p>
+<h3>References</h3>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>L. R. Rabiner, "A tutorial on hidden Markov models and selected applications in speech recognition," in Proceedings of the IEEE, vol. 77, no. 2, pp. 257-286, Feb 1989.&#160;<a class="footnote-backref" href="#fnref:1" rev="footnote" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
         indent = "0em",
@@ -253,6 +286,25 @@ where <span class="math">\(B\)</span> is the candidate word space (detailed <a h
     </div> -->
 
     <div class='article'>
+        <a href="https://stlong0521.github.io/20160319 - HMM and POS.html"><h2>Hidden Markov Model and Part of Speech Tagging</h2></a>
+        <div class= "well small"> Sat 19 Mar 2016
+
+by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
+ 
+
+
+ 
+    Tags <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a> <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  </div>
+        <div class="summary"><p>In a Markov model, we generally assume that the states are directly observable or one state corresponds to one observation/event only. However, this is not always true. A good example would be: in speech recognition, we are supposed to identify a sequence of words given a sequence of utterances ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20160319 - HMM and POS.html">read more</a></div>
+    </div>
+	
+
+ 
+        
+
+ 
+
+    <div class='article'>
         <a href="https://stlong0521.github.io/20160305 - Missing Word.html"><h2>Locating and Filling Missing Words in Sentences</h2></a>
         <div class= "well small"> Sat 05 Mar 2016
 
@@ -263,8 +315,8 @@ by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.htm
  
     Tags <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a>  </div>
         <div class="summary"><p>There has been many occasions that we have incomplete sentences that are needed to completed. One example is that in speech recognition noisy environment can lead to unrecognizable words, but we still hope to recover and understand the complete sentence (e.g., by inference); another example is sentence completion questions ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20160305 - Missing Word.html">read more</a></div>
-    </div>
-	
+    </div>	
+				
 <div class="pagination">
 <ul>
     <li class="prev disabled"><a href="#">&larr; Previous</a></li>

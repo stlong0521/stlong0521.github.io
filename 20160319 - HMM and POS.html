@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Tianlong's Blog <small>Machine Learning</small></title>
+    <title>Tianlong's Blog - Hidden Markov Model and Part of Speech Tagging</title>
     <meta name="description" content="">
     <meta name="author" content="Tianlong Song">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -53,14 +53,9 @@
     <div class="row">
 
         <div class="span9">
-        
-
-        
-
-
-<!--     <div class='article'>
+    <div class='article'>
         <div class="content-title">
-            <a href="https://stlong0521.github.io/20160319 - HMM and POS.html"><h1>Hidden Markov Model and Part of Speech Tagging</h1></a>
+            <h1>Hidden Markov Model and Part of Speech Tagging</h1>
 Sat 19 Mar 2016
 
 by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
@@ -68,9 +63,8 @@ by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.htm
 
 
  
-    Tags <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a> <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  
-        </div>
-        
+    Tags <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a> <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>         </div>
+	
         <div><p>In a Markov model, we generally assume that the states are directly observable or one state corresponds to one observation/event only. However, this is not always true. A good example would be: in speech recognition, we are supposed to identify a sequence of words given a sequence of utterances, in which case the states (words) are not directly observable and one single state (word) could have different observations (utterances). This is a perfect example that could be treated as a hidden Markov model (HMM), by which the hidden states can be inferred from the observations.</p>
 <h3>Elements of a Hidden Markov Model (HMM)<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup></h3>
 <p>A hidden Markov model, <span class="math">\(\Phi\)</span>, typically includes the following elements:</p>
@@ -282,128 +276,23 @@ Then the model parameters can be recomputed as
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 </script></div>
-        <hr />
-    </div> -->
-
-    <div class='article'>
-        <a href="https://stlong0521.github.io/20160319 - HMM and POS.html"><h2>Hidden Markov Model and Part of Speech Tagging</h2></a>
-        <div class= "well small"> Sat 19 Mar 2016
-
-by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
- 
-
-
- 
-    Tags <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a> <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  </div>
-        <div class="summary"><p>In a Markov model, we generally assume that the states are directly observable or one state corresponds to one observation/event only. However, this is not always true. A good example would be: in speech recognition, we are supposed to identify a sequence of words given a sequence of utterances ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20160319 - HMM and POS.html">read more</a></div>
-    </div>
 	
+        <hr>
 
- 
-        
+        <h2>Comments</h2>
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'tianlongsong'; 
+    var disqus_title = 'Hidden Markov Model and Part of Speech Tagging';
 
- 
-
-    <div class='article'>
-        <a href="https://stlong0521.github.io/20160312 - EM and GMM.html"><h2>Expectation Maximization Algorithm and Gaussian Mixture Model</h2></a>
-        <div class= "well small"> Sat 12 Mar 2016
-
-by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
- 
-
-
- 
-    Tags <a href="https://stlong0521.github.io/tag/data-science.html">Data Science</a> <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  </div>
-        <div class="summary"><p>In statistical modeling, it is possible that some observations are just missing. For example, when flipping two biased coins with unknown biases, we only have a sequence of observations on heads and tails, but forgot to record which coin each observation comes from. In this case, the conventional maximum likelihood ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20160312 - EM and GMM.html">read more</a></div>
-    </div>	
-				
-
- 
-        
-
- 
-
-    <div class='article'>
-        <a href="https://stlong0521.github.io/20160228 - Logistic Regression.html"><h2>Binary and Multiclass Logistic Regression Classifiers</h2></a>
-        <div class= "well small"> Sun 28 Feb 2016
-
-by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
- 
-
-
- 
-    Tags <a href="https://stlong0521.github.io/tag/data-science.html">Data Science</a> <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  </div>
-        <div class="summary"><p>The generative classification model, such as Naive Bayes, tries to learn the probabilities and then predict by using Bayes rules to calculate the posterior, <span class="math">\(p(y|\textbf{x})\)</span>. However, discrimitive classifiers model the posterior directly. As one of the most popular discrimitive classifiers, logistic regression directly models the linear decision ...</p><script type='text/javascript'>if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
-    var align = "center",
-        indent = "0em",
-        linebreak = "false";
-
-    if (false) {
-        align = (screen.width < 768) ? "left" : align;
-        indent = (screen.width < 768) ? "0em" : indent;
-        linebreak = (screen.width < 768) ? 'true' : linebreak;
-    }
-
-    var mathjaxscript = document.createElement('script');
-    var location_protocol = (false) ? 'https' : document.location.protocol;
-    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
-    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
-    mathjaxscript.type = 'text/javascript';
-    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
-    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
-        "MathJax.Hub.Config({" +
-        "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' }, Macros: {} }," +
-        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
-        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
-        "    displayAlign: '"+ align +"'," +
-        "    displayIndent: '"+ indent +"'," +
-        "    showMathMenu: true," +
-        "    messageStyle: 'normal'," +
-        "    tex2jax: { " +
-        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
-        "        displayMath: [ ['$$','$$'] ]," +
-        "        processEscapes: true," +
-        "        preview: 'TeX'," +
-        "    }, " +
-        "    'HTML-CSS': { " +
-        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
-        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
-        "    }, " +
-        "}); " +
-        "if ('default' !== 'default') {" +
-            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
-                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
-                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
-                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
-                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
-                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
-            "});" +
-            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
-                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
-                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
-                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
-                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
-                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
-            "});" +
-        "}";
-    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
-}
-</script> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20160228 - Logistic Regression.html">read more</a></div>
-    </div>	
-				
-<div class="pagination">
-<ul>
-    <li class="prev disabled"><a href="#">&larr; Previous</a></li>
-
-    <li class="active"><a href="https://stlong0521.github.io/tag/machine-learning.html">1</a></li>
-
-    <li class="next disabled"><a href="#">&rarr; Next</a></li>
-
-</ul>
-</div>
- 
-  
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
         </div>
         
         <div class="span3">
