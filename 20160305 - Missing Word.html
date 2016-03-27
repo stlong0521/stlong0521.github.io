@@ -92,8 +92,12 @@ where <span class="math">\(\gamma\)</span> is a small positive constant. Hence, 
 <p>Note that in (\ref{Eqn:Score}), if we set <span class="math">\(\gamma=0\)</span>, the left part would be exactly the percentage of positive votes for missing word at that location, and the right part is the percentage of negative votes. It seems a fairly reasonable score, then <em>why do we still need a positive <span class="math">\(\gamma\)</span></em>? The underlying reason is that intuitively the more number of votes for a particular decision, the more confident we are on that decision. This trend is reflected in a positive <span class="math">\(\gamma\)</span>, which can be viewed as <em>sparse vote penalty</em> and is useful in breaking ties in the missing word location voting. That is, if we have exactly the same ratio of positive votes relative to negative votes for two candidate locations, e.g., 80 positive votes v.s. 20 negative votes for location A, and 8 positive votes v.s. 2 negative votes for location B, we would believe that location A is more likely to be the missing word location compared with location B.</p>
 <h4>Word Distance Statistics (WDS)</h4>
 <p>In view of the fact that the statistics of the two words immediately adjacent to a given location contribute a lot in deciding whether the location has a word missing, we tentatively guess that all the words within a window centered at that location would more or less contribute some information as well. As a result, we introduce the concept of word distance statistics (WDS).</p>
-<p>More specifically, we use <span class="math">\(\widetilde{C}(w_1,w_2,m)\)</span> to denote the number of occurrences of the pattern, where there is exactly <span class="math">\(m\)</span> words between <span class="math">\(w_1\)</span> and <span class="math">\(w_2\)</span>, i.e., the word distance of <span class="math">\(w_1\)</span> and <span class="math">\(w_2\)</span> is <span class="math">\(m\)</span>. For a given location <span class="math">\(l\)</span> in an incomplete sentence and a word window size <span class="math">\(W\)</span>, we are interested in the word distance statistics of each word pair, in which one word <span class="math">\(w_i\)</span> is on the left of the location <span class="math">\(l\)</span>, and the other word <span class="math">\(w_j\)</span> is on the right, as illustrated in the figure below.</p>
-<p><img src="/figures/20160305/WDS.png" alt="WDS" width="400" height="150"></p>
+<p>More specifically, we use <span class="math">\(\widetilde{C}(w_1,w_2,m)\)</span> to denote the number of occurrences of the pattern, where there is exactly <span class="math">\(m\)</span> words between <span class="math">\(w_1\)</span> and <span class="math">\(w_2\)</span>, i.e., the word distance of <span class="math">\(w_1\)</span> and <span class="math">\(w_2\)</span> is <span class="math">\(m\)</span>. For a given location <span class="math">\(l\)</span> in an incomplete sentence and a word window size <span class="math">\(W\)</span>, we are interested in the word distance statistics of each word pair, in which one word <span class="math">\(w_i\)</span> is on the left of the location <span class="math">\(l\)</span>, and the other word <span class="math">\(w_j\)</span> is on the right, as illustrated in Fig. 1.</p>
+<figure align="center">
+<img src="/figures/20160305/WDS.png" alt="WDS">
+<figcaption align="center">Fig. 1: Word distance illustration.</figcaption>
+</figure>
+
 <p>Formally, for any <span class="math">\(l-W/2 \leq i \leq l-1\)</span> and <span class="math">\(l \leq j \leq l+W/2-1\)</span>, <span class="math">\(\widetilde{C}(w_i,w_j,j-i)\)</span> would be the number of positive votes for missing word at this location, while <span class="math">\(\widetilde{C}(w_i,w_j,j-i-1)\)</span> is the number of negative votes. Applying the idea in (\ref{Eqn:Score}), for each word pair <span class="math">\((w_i,w_j)\)</span>, we extract its feature as the score indicating there is a missing word at location <span class="math">\(l\)</span>, i.e.,
 </p>
 <div class="math">\begin{equation} \label{Eqn:ScoreGeneralized}
@@ -109,19 +113,22 @@ As a special example, let <span class="math">\(i=l-1\)</span> and <span class="m
 <p>
 where the weight, <span class="math">\(v(i,j)\)</span>, should be monotonically decreasing with respect to <span class="math">\(|j-i|\)</span>.</p>
 <h3>Filling the Missing Word</h3>
-<p>To find the most probable word in the given missing word location, we take into account five conditional probabilities, as shown in the table below, to explore the statistical connection between the candidate words and the surrounding words at the missing word location. Ultimately, the most probable missing word can be determined by
+<p>To find the most probable word in the given missing word location, we take into account five conditional probabilities, as shown in Table 1, to explore the statistical connection between the candidate words and the surrounding words at the missing word location. Ultimately, the most probable missing word can be determined by
 </p>
 <div class="math">\begin{equation}
 \hat{w}={\arg \, \max}_{w\in{B}} \sum_{1 \leq i \leq 5} v_iP_i,
 \end{equation}</div>
 <p>
 where <span class="math">\(B\)</span> is the candidate word space (detailed <a href="https://github.com/stlong0521/missing-word/blob/master/Project%20Report.pdf">here</a>), and the weight <span class="math">\(v_i\)</span> is used to reflect the importance of each conditional probability in contributing to the final score.</p>
-<p><img src="/figures/20160305/CondProb.png" alt="WDS" width="400" height="150"></p>
-<p>Note that in the table above, "*" denotes an arbitrary word.</p>
+<figure align="center">
+<img src="/figures/20160305/CondProb.png" alt="CondProb">
+<figcaption align="center">Table 1: Conditional probabilities considered in missing word filling, in which "*" denotes an arbitrary word.</figcaption>
+</figure>
+
 <h3>Experimental Results</h3>
 <p>The training data contains <span class="math">\(30,301,028\)</span> complete sentences, of which the average sentence length is approximately <span class="math">\(25\)</span>. In the vocabulary with a size of <span class="math">\(2,425,337\)</span>, <span class="math">\(14,216\)</span> words that have occurred in at least <span class="math">\(0.1\%\)</span> of total sentences are labeled as high-frequency words, and the remaining <span class="math">\(58,417,315\)</span> words are labeled as 'UNKA'. To perform the cross validation, in our experiments, the training data is splitted into two part, TRAIN and DEV. The TRAIN set is used to train our models, and the DEV set is applied to test our models.</p>
 <h4>Missing Word Location</h4>
-<p>The table below shows the estimation accuracy of the missing word locations for the two proposed approaches, N-gram and WDS. For comparison, we list the corresponding probabilities by chance as well. Each entry shows the probabilities that the correct location is included in the ranked candidate location list returned by each approach, where the list size varies from <span class="math">\(1\)</span> to <span class="math">\(10\)</span>. The sparse vote penalty coefficient, <span class="math">\(\gamma\)</span>, is set to 0.01. In the WDS approach, we consider a word window size <span class="math">\(W=4\)</span>, i.e., four pairs of words are taken into account.</p>
+<p>Table 2 shows the estimation accuracy of the missing word locations for the two proposed approaches, N-gram and WDS. For comparison, we list the corresponding probabilities by chance as well. Each entry shows the probabilities that the correct location is included in the ranked candidate location list returned by each approach, where the list size varies from <span class="math">\(1\)</span> to <span class="math">\(10\)</span>. The sparse vote penalty coefficient, <span class="math">\(\gamma\)</span>, is set to 0.01. In the WDS approach, we consider a word window size <span class="math">\(W=4\)</span>, i.e., four pairs of words are taken into account.</p>
 <table class="table table-striped table-bordered table-hover">
 <thead>
 <tr>
@@ -160,8 +167,10 @@ where <span class="math">\(B\)</span> is the candidate word space (detailed <a h
 </tr>
 </tbody>
 </table>
+<figcaption align="center">Table 2: Accuracy of missing word location.</figcaption>
+
 <h4>Missing Word Filling</h4>
-<p>The table below shows the accuracies of filling the missing word given the location. Each row of the second column shows the probability that the correct word is included in the ranked candidate words list returned by the proposed approach.</p>
+<p>Table 3 shows the accuracies of filling the missing word given the location. Each row of the second column shows the probability that the correct word is included in the ranked candidate words list returned by the proposed approach.</p>
 <table class="table table-striped table-bordered table-hover">
 <thead>
 <tr>
@@ -184,6 +193,8 @@ where <span class="math">\(B\)</span> is the candidate word space (detailed <a h
 </tr>
 </tbody>
 </table>
+<figcaption align="center">Table 3: Accuracy of missing word filling.</figcaption>
+
 <h3>Acknowledgement</h3>
 <p>I did this project with my partner, <a href="https://zhwa.github.io/">Zhe Wang</a>. To see the codes and/or report, <a href="https://github.com/stlong0521/missing-word">click here</a> for more information.</p>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
