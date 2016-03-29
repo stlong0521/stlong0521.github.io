@@ -40,7 +40,7 @@ p(\textbf{w},\textbf{z}|\boldsymbol\alpha,\boldsymbol\beta)=p(\textbf{w}|\textbf
 \end{equation}&lt;/div&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;h3&gt;Joint Distribution Emulation by Gibbs Sampling&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt;&lt;/h3&gt;
+&lt;h3&gt;Joint Distribution Emulation by Gibbs Sampling&lt;sup id="fnref:2"&gt;&lt;a class="footnote-ref" href="#fn:2" rel="footnote"&gt;2&lt;/a&gt;&lt;/sup&gt;&lt;/h3&gt;
 &lt;p&gt;So far we know that the documents can be characterized by a joint distribution of topics and words as shown in (\ref{Eqn:Joint_Distribution}). The words are given, but the associating topics are not. Now we are thinking how to properly associate a topic to each word in each document, such that the result will best fit the joint distribution in (\ref{Eqn:Joint_Distribution}). This is a typical problem that can be solved by &lt;a href="https://en.wikipedia.org/wiki/Gibbs_sampling"&gt;Gibbs sampling&lt;/a&gt;.&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;Gibbs sampling, a special case of Monte Carlo Markov Chain (MCMC) sampling, is a method to emulate high-dimensional probability distributions &lt;span class="math"&gt;\(p(\textbf{x})\)&lt;/span&gt; by the stationary behaviour of a Markov chain. A typical Gibbs sampling works by: (i) Initialize &lt;span class="math"&gt;\(\textbf{x}\)&lt;/span&gt;; (ii) Repeat until convergence: for all &lt;span class="math"&gt;\(i\)&lt;/span&gt;, sample &lt;span class="math"&gt;\(x_i\)&lt;/span&gt; from &lt;span class="math"&gt;\(p(x_i|\textbf{x}_{\neg i})\)&lt;/span&gt;, where &lt;span class="math"&gt;\(\neg i\)&lt;/span&gt; indicates excluding the &lt;span class="math"&gt;\(i\)&lt;/span&gt;th dimension. According to the stationary behaviour of a Markov chain, a sufficiently large collection of samples after convergence would well approximate the desired distribution &lt;span class="math"&gt;\(p(\textbf{x})\)&lt;/span&gt;.&lt;/p&gt;
@@ -52,7 +52,7 @@ p(z_i=k|\textbf{z}_{\neg i},\textbf{w}) \propto \hat{\vartheta}_{mk}\hat{\varphi
 \end{equation}&lt;/div&gt;
 &lt;p&gt;
 where &lt;span class="math"&gt;\(n_m^{(k)}\)&lt;/span&gt; is the count of topic &lt;span class="math"&gt;\(k\)&lt;/span&gt; in document &lt;span class="math"&gt;\(m\)&lt;/span&gt;, &lt;span class="math"&gt;\(n_k^{(t)}\)&lt;/span&gt; is the count of word &lt;span class="math"&gt;\(t\)&lt;/span&gt; for topic &lt;span class="math"&gt;\(k\)&lt;/span&gt;, and &lt;span class="math"&gt;\(\neg i\)&lt;/span&gt; indicates that &lt;span class="math"&gt;\(w_i\)&lt;/span&gt; should not be counted. Besides, &lt;span class="math"&gt;\(\alpha_k\)&lt;/span&gt; and &lt;span class="math"&gt;\(\beta_t\)&lt;/span&gt; are the prior knowledge (pseudo counts) for topic &lt;span class="math"&gt;\(k\)&lt;/span&gt; and word &lt;span class="math"&gt;\(t\)&lt;/span&gt;, respectively. The underlying physical meaning is that (\ref{Eqn:Gibbs_Sampling}) actually characterizes a word-generating path &lt;span class="math"&gt;\(p(topic~k|doc~m)p(word~t|topic~k)\)&lt;/span&gt;.&lt;/p&gt;
-&lt;h3&gt;LDA: Training and Inference&lt;/h3&gt;
+&lt;h3&gt;LDA: Training and Inference&lt;sup id="fnref:2"&gt;&lt;a class="footnote-ref" href="#fn:2" rel="footnote"&gt;2&lt;/a&gt;&lt;/sup&gt;&lt;/h3&gt;
 &lt;p&gt;With the LDA model built, we want to: (i) estimate the model parameters, &lt;span class="math"&gt;\(\boldsymbol\vartheta_m\)&lt;/span&gt; and &lt;span class="math"&gt;\(\boldsymbol\varphi_k\)&lt;/span&gt;, from training documents; (ii) find out the topic distribution, &lt;span class="math"&gt;\(\boldsymbol\vartheta_{new}\)&lt;/span&gt;, for each new document.&lt;/p&gt;
 &lt;p&gt;The training procedure is:&lt;/p&gt;
 &lt;ol&gt;
@@ -77,6 +77,9 @@ where &lt;span class="math"&gt;\(n_m^{(k)}\)&lt;/span&gt; is the count of topic 
 &lt;ol&gt;
 &lt;li id="fn:1"&gt;
 &lt;p&gt;G. Heinrich, &lt;em&gt;&lt;a href="http://www.arbylon.net/publications/text-est.pdf"&gt;Parameter estimation for text analysis&lt;/a&gt;&lt;/em&gt;, 2005.&amp;#160;&lt;a class="footnote-backref" href="#fnref:1" rev="footnote" title="Jump back to footnote 1 in the text"&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:2"&gt;
+&lt;p&gt;Z. Jin, &lt;a href="http://cos.name/2013/03/lda-math-lda-text-modeling/"&gt;&lt;em&gt;LDA Topic Modeling (in Chinese)&lt;/em&gt;&lt;/a&gt;,  accessed on Mar 26, 2016.&amp;#160;&lt;a class="footnote-backref" href="#fnref:2" rev="footnote" title="Jump back to footnote 2 in the text"&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
 &lt;/div&gt;

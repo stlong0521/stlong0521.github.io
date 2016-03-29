@@ -114,7 +114,7 @@ p(\textbf{w},\textbf{z}|\boldsymbol\alpha,\boldsymbol\beta)=p(\textbf{w}|\textbf
 \end{equation}</div>
 </li>
 </ol>
-<h3>Joint Distribution Emulation by Gibbs Sampling<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup></h3>
+<h3>Joint Distribution Emulation by Gibbs Sampling<sup id="fnref:2"><a class="footnote-ref" href="#fn:2" rel="footnote">2</a></sup></h3>
 <p>So far we know that the documents can be characterized by a joint distribution of topics and words as shown in (\ref{Eqn:Joint_Distribution}). The words are given, but the associating topics are not. Now we are thinking how to properly associate a topic to each word in each document, such that the result will best fit the joint distribution in (\ref{Eqn:Joint_Distribution}). This is a typical problem that can be solved by <a href="https://en.wikipedia.org/wiki/Gibbs_sampling">Gibbs sampling</a>.</p>
 <blockquote>
 <p>Gibbs sampling, a special case of Monte Carlo Markov Chain (MCMC) sampling, is a method to emulate high-dimensional probability distributions <span class="math">\(p(\textbf{x})\)</span> by the stationary behaviour of a Markov chain. A typical Gibbs sampling works by: (i) Initialize <span class="math">\(\textbf{x}\)</span>; (ii) Repeat until convergence: for all <span class="math">\(i\)</span>, sample <span class="math">\(x_i\)</span> from <span class="math">\(p(x_i|\textbf{x}_{\neg i})\)</span>, where <span class="math">\(\neg i\)</span> indicates excluding the <span class="math">\(i\)</span>th dimension. According to the stationary behaviour of a Markov chain, a sufficiently large collection of samples after convergence would well approximate the desired distribution <span class="math">\(p(\textbf{x})\)</span>.</p>
@@ -126,7 +126,7 @@ p(z_i=k|\textbf{z}_{\neg i},\textbf{w}) \propto \hat{\vartheta}_{mk}\hat{\varphi
 \end{equation}</div>
 <p>
 where <span class="math">\(n_m^{(k)}\)</span> is the count of topic <span class="math">\(k\)</span> in document <span class="math">\(m\)</span>, <span class="math">\(n_k^{(t)}\)</span> is the count of word <span class="math">\(t\)</span> for topic <span class="math">\(k\)</span>, and <span class="math">\(\neg i\)</span> indicates that <span class="math">\(w_i\)</span> should not be counted. Besides, <span class="math">\(\alpha_k\)</span> and <span class="math">\(\beta_t\)</span> are the prior knowledge (pseudo counts) for topic <span class="math">\(k\)</span> and word <span class="math">\(t\)</span>, respectively. The underlying physical meaning is that (\ref{Eqn:Gibbs_Sampling}) actually characterizes a word-generating path <span class="math">\(p(topic~k|doc~m)p(word~t|topic~k)\)</span>.</p>
-<h3>LDA: Training and Inference</h3>
+<h3>LDA: Training and Inference<sup id="fnref:2"><a class="footnote-ref" href="#fn:2" rel="footnote">2</a></sup></h3>
 <p>With the LDA model built, we want to: (i) estimate the model parameters, <span class="math">\(\boldsymbol\vartheta_m\)</span> and <span class="math">\(\boldsymbol\varphi_k\)</span>, from training documents; (ii) find out the topic distribution, <span class="math">\(\boldsymbol\vartheta_{new}\)</span>, for each new document.</p>
 <p>The training procedure is:</p>
 <ol>
@@ -151,6 +151,9 @@ where <span class="math">\(n_m^{(k)}\)</span> is the count of topic <span class=
 <ol>
 <li id="fn:1">
 <p>G. Heinrich, <em><a href="http://www.arbylon.net/publications/text-est.pdf">Parameter estimation for text analysis</a></em>, 2005.&#160;<a class="footnote-backref" href="#fnref:1" rev="footnote" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:2">
+<p>Z. Jin, <a href="http://cos.name/2013/03/lda-math-lda-text-modeling/"><em>LDA Topic Modeling (in Chinese)</em></a>,  accessed on Mar 26, 2016.&#160;<a class="footnote-backref" href="#fnref:2" rev="footnote" title="Jump back to footnote 2 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
