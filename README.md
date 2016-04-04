@@ -2,4 +2,4 @@ Personal Blog
 ================
 This is my personal blog. [Visit me!](https://stlong0521.github.io)
 <br />
-Updated on Mar 29, 2016.
+Updated on Apr 03, 2016.

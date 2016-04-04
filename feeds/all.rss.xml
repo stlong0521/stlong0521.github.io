@@ -1,5 +1,197 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tianlong's Blog</title><link>https://stlong0521.github.io/</link><description></description><atom:link href="https://stlong0521.github.io/feeds/all.rss.xml" rel="self"></atom:link><lastBuildDate>Sat, 26 Mar 2016 00:00:00 -0400</lastBuildDate><item><title>Latent Dirichlet Allocation and Topic Modeling</title><link>https://stlong0521.github.io/20160326%20-%20LDA.html</link><description>&lt;p&gt;When reading an article, we humans are able to easily identify the topics the article talks about. An interesting question is: can we automate this process, i.e., train a machine to find out the underlying topics in articles? In this post, a very popular topic modeling method, Latent Dirichlet allocation (LDA), will be discussed.&lt;/p&gt;
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tianlong's Blog</title><link>https://stlong0521.github.io/</link><description></description><atom:link href="https://stlong0521.github.io/feeds/all.rss.xml" rel="self"></atom:link><lastBuildDate>Sun, 03 Apr 2016 00:00:00 -0400</lastBuildDate><item><title>Neural Networks and Deep Learning</title><link>https://stlong0521.github.io/20160403%20-%20NN%20and%20DL.html</link><description>&lt;p&gt;It has been a long time since the idea of neural networks was proposed, but it is really during the last few years that neural networks have become widely used. One of the major enablers is the infrastructure with high computational capability (e.g., cloud computing), which makes the training of large and deep (multilayer) neural networks possible. This post is in no way an exhaustive review of neural networks or deep learning, but rather an entry-level introduction excerpted from a very popular book&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt;.&lt;/p&gt;
+&lt;h3&gt;Neural Network (NN) Basics&lt;/h3&gt;
+&lt;p&gt;Let us start with sigmoid neurons, and then find out how they are used in NNs.&lt;/p&gt;
+&lt;h4&gt;Sigmoid Neurons&lt;/h4&gt;
+&lt;p&gt;As the smallest unit in NNs, a sigmoid neuron mimics the behaviour of a real neuron in human neural systems. It takes multiple inputs and generates one single output, as in a process of local or partial decision making. More specifically, given a series of inputs &lt;span class="math"&gt;\([x_1,x_2,...]\)&lt;/span&gt;, a neuron applies the sigmoid function to the weighted sum of the inputs plus a bias, i.e., the output of the neuron is computed as
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{equation}
+\sigma(z)=\sigma(\sum_j{w_jx_j}+b)=\frac{1}{1+\exp(-\sum_j{w_jx_j}-b)},
+\end{equation}&lt;/div&gt;
+&lt;p&gt;
+where &lt;span class="math"&gt;\(z=\sum_j{w_jx_j}+b\)&lt;/span&gt; is the weighted input to the neuron, and the sigmoid function, &lt;span class="math"&gt;\(\sigma(z)=\frac{1}{1+\exp(-z)}\)&lt;/span&gt;, is to approximate the step function as usually used in binary decision making. A natural question is: why do not we just use the step function? The answer is that the step function is not smooth (not differentiable at origin), which disables the gradient method in model learning. With the smoothed version of the step function, we are safe to relate the change at the output to the weight/bias changes by
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{equation}
+\Delta{output}=\sum_j{\frac{\partial{output}}{\partial{w_j}}\Delta{w_j}}+\frac{\partial{output}}{\partial{b}}\Delta{b}.
+\end{equation}&lt;/div&gt;
+&lt;h4&gt;The Architecture of NNs&lt;/h4&gt;
+&lt;p&gt;The architecture of a typical NN is depicted in Fig. 1. As shown, the leftmost layer in this network is called the input layer, and the neurons within this layer are called input neurons. The rightmost or output layer contains the output neuron(s). The middle layer is called a hidden layer, since the neurons in this layer are neither inputs nor outputs.&lt;/p&gt;
+&lt;figure align="center"&gt;
+&lt;img src="/figures/20160403/NN.png" alt="Neural Network Architecture"&gt;
+&lt;figcaption align="center"&gt;Fig. 1: The neural network architecture.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;It was proved that NNs with a single hidden layer can be used to approximate any continuous function to any desired precision. Click &lt;a href="http://neuralnetworksanddeeplearning.com/chap4.html"&gt;here&lt;/a&gt; to see how. It can be expected that a NN with more neurons/layers could be more accurate in the approximation.&lt;/p&gt;
+&lt;h4&gt;Learning with Gradient Descent&lt;/h4&gt;
+&lt;p&gt;Before training a model, we first need to find a way to quantify how well we are achieving. That is, we need to introduce a cost function. Although there are many cost functions available, we will start with the quadratic cost function, which is defined as
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{equation}
+C(w,b)=\frac{1}{2n}\sum_x{||y(x)-a||^2},
+\end{equation}&lt;/div&gt;
+&lt;p&gt;
+where &lt;span class="math"&gt;\(w\)&lt;/span&gt; denotes the collection of all weights in the network, &lt;span class="math"&gt;\(b\)&lt;/span&gt; all the biases, &lt;span class="math"&gt;\(n\)&lt;/span&gt; is the total number of training inputs, &lt;span class="math"&gt;\(a\)&lt;/span&gt; is the vector of outputs from the network when &lt;span class="math"&gt;\(x\)&lt;/span&gt; is input, and the sum is over all training inputs, &lt;span class="math"&gt;\(x\)&lt;/span&gt;.&lt;/p&gt;
+&lt;p&gt;Applying the gradient descent method, we can learn the weights and biases by
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{equation}
+w_k'=w_k-\eta\frac{\partial{C}}{\partial{w_k}},
+\end{equation}&lt;/div&gt;
+&lt;div class="math"&gt;\begin{equation}
+b_l'=b_l-\eta\frac{\partial{C}}{\partial{b_l}}.
+\end{equation}&lt;/div&gt;
+&lt;p&gt;
+To compute each gradient, we need to take into account all the training input &lt;span class="math"&gt;\(x\)&lt;/span&gt; in each iteration. However, this slows the learning down if the training data size is large. An idea called &lt;em&gt;stochastic gradient descent (a.k.a., mini-batch learning)&lt;/em&gt; can be used to speed up learning. The idea is to estimate the gradient by computing it for a small sample of randomly chosen training inputs.&lt;/p&gt;
+&lt;h3&gt;The Backpropagation Algorithm: How to Compute Gradients of the Cost Function?&lt;/h3&gt;
+&lt;p&gt;So far we have known that the model parameters can be learned by the gradient descent method, but the computation of the gradients can be challenging by itself. Note that the network size and the data size can both be very large. In this section, we will see how the backpropagation algorithm helps compute the gradients efficiently.&lt;/p&gt;
+&lt;h4&gt;Matrix Notation for NNs&lt;/h4&gt;
+&lt;p&gt;For ease of presentation, let us define some notations first.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(w_{jk}^l\)&lt;/span&gt;: weight from the &lt;span class="math"&gt;\(k\)&lt;/span&gt;th neuron in layer &lt;span class="math"&gt;\(l-1\)&lt;/span&gt; to the &lt;span class="math"&gt;\(j\)&lt;/span&gt;th neuron in layer &lt;span class="math"&gt;\(l\)&lt;/span&gt;;&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(w^l=\{w_{jk}^l\}\)&lt;/span&gt;: matrix including all weights from each neuron in layer &lt;span class="math"&gt;\(l-1\)&lt;/span&gt; to each neuron in layer &lt;span class="math"&gt;\(l\)&lt;/span&gt;;&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(b_j^l\)&lt;/span&gt;: bias for the &lt;span class="math"&gt;\(j\)&lt;/span&gt;th neuron in layer &lt;span class="math"&gt;\(l\)&lt;/span&gt;;&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(b^l=\{b_j^l\}\)&lt;/span&gt;: column vector including all biases for each neuron in layer &lt;span class="math"&gt;\(l\)&lt;/span&gt;;&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(a_j^l=\sigma(\sum_k{w_{jk}^la_k^{l-1}+b_j^l})\)&lt;/span&gt;: activation of the &lt;span class="math"&gt;\(j\)&lt;/span&gt;th neuron in layer &lt;span class="math"&gt;\(l\)&lt;/span&gt;;&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(a^l=\{a_j^l\}=\sigma(w^la^{l-1}+b^l)\)&lt;/span&gt;: column vector including all activations of each neuron in layer &lt;span class="math"&gt;\(l\)&lt;/span&gt;;&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(z_j^l=\sum_k{w_{jk}^la_k^{l-1}+b_j^l}\)&lt;/span&gt;: weighted input to the &lt;span class="math"&gt;\(j\)&lt;/span&gt;th neuron in layer &lt;span class="math"&gt;\(l\)&lt;/span&gt;;&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(z^l=\{z_j^l\}=w^la^{l-1}+b^l\)&lt;/span&gt;: column vector including all weighted inputs to each neuron in layer &lt;span class="math"&gt;\(l\)&lt;/span&gt;;&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\delta_j^l=\frac{\partial{C}}{\partial{z_j^l}}\)&lt;/span&gt;: gradient of the cost function w.r.t. the weighted input to the &lt;span class="math"&gt;\(j\)&lt;/span&gt;th neuron in layer &lt;span class="math"&gt;\(l\)&lt;/span&gt;, &lt;span class="math"&gt;\(z_j^l\)&lt;/span&gt;;&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\delta^l=\{\delta_j^l\}\)&lt;/span&gt;: column vector including all gradients of the cost function w.r.t. the weighted input to each neuron in layer &lt;span class="math"&gt;\(l\)&lt;/span&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4&gt;Four Fundamental Equations behind Backpropagation&lt;/h4&gt;
+&lt;p&gt;There are four fundamental equations behind backpropagation, which will be explained one by one as below.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;First&lt;/em&gt;, the gradient of the cost function w.r.t. the weighted input to each neuron in output layer &lt;span class="math"&gt;\(L\)&lt;/span&gt; can be computed as
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{equation}
+\delta^L=\nabla_{a^L}C \odot \sigma'(z^L),
+\end{equation}&lt;/div&gt;
+&lt;p&gt;
+where &lt;span class="math"&gt;\(\nabla_{a^L}C=\{\frac{\partial{C}}{\partial{a_j^L}}\}\)&lt;/span&gt; is defined to be a column vector whose components are the partial derivatives &lt;span class="math"&gt;\(\frac{\partial{C}}{\partial{a_j^L}}\)&lt;/span&gt;, &lt;span class="math"&gt;\(\sigma'(z)\)&lt;/span&gt; is the first-order derivative of the sigmoid function &lt;span class="math"&gt;\(\sigma(z)\)&lt;/span&gt;, and &lt;span class="math"&gt;\(\odot\)&lt;/span&gt; represents an element-wise product.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Second&lt;/em&gt;, the gradient of the cost function w.r.t. the weighted input to each neuron in layer &lt;span class="math"&gt;\(l(l&amp;lt;L)\)&lt;/span&gt; can be computed from the results of layer &lt;span class="math"&gt;\(l+1\)&lt;/span&gt; (backpropagation), i.e.,
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{equation}
+\delta^l=((w^{l+1})^T\delta^{l+1}) \odot \sigma'(z^l).
+\end{equation}&lt;/div&gt;
+&lt;p&gt;&lt;em&gt;Third&lt;/em&gt;, the gradient of the cost function w.r.t. each bias can be computed as
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{equation}
+\frac{\partial{C}}{\partial{b_j^l}}=\delta_j^l.
+\end{equation}&lt;/div&gt;
+&lt;p&gt;&lt;em&gt;Fourth&lt;/em&gt;, the gradient of the cost function w.r.t. each weight can be computed as
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{equation}
+\frac{\partial{C}}{\partial{w_{jk}^l}}=\delta_j^la_k^{l-1}.
+\end{equation}&lt;/div&gt;
+&lt;p&gt;The four equations above are not straightforward at first sight, but they are all consequences of the chain rule from multivariable calculus. The proof can be found &lt;a href="http://neuralnetworksanddeeplearning.com/chap2.html#proof_of_the_four_fundamental_equations_(optional)"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;h4&gt;The Backpropagation Algorithm&lt;/h4&gt;
+&lt;p&gt;The backpropagation algorithm essentially includes a feedforward process and a backpropagation process. More specifically, in each iteration:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Input a mini-batch of &lt;span class="math"&gt;\(m\)&lt;/span&gt; training examples;&lt;/li&gt;
+&lt;li&gt;For each training example &lt;span class="math"&gt;\(x\)&lt;/span&gt;:&lt;ul&gt;
+&lt;li&gt;Initialization: set the activations of the input layer by &lt;span class="math"&gt;\(a^{x,1}=x\)&lt;/span&gt;;&lt;/li&gt;
+&lt;li&gt;Feedforward: for each &lt;span class="math"&gt;\(l=2,3,...,L\)&lt;/span&gt;, compute &lt;span class="math"&gt;\(z^{x,l}=w^la^{x,l-1}+b^l\)&lt;/span&gt; and &lt;span class="math"&gt;\(a^{x,l}=\sigma(z^{x,l})\)&lt;/span&gt;;&lt;/li&gt;
+&lt;li&gt;Output error: compute the error vector &lt;span class="math"&gt;\(\delta^{x,L}=\nabla_{a^L}C_x \odot \sigma'(z^{x,L})\)&lt;/span&gt;;&lt;/li&gt;
+&lt;li&gt;Backpropagate the error: for &lt;span class="math"&gt;\(l=L-1,L-2,...,2\)&lt;/span&gt;, compute &lt;span class="math"&gt;\(\delta^{x,l}=((w^{l+1})^T\delta^{x,l+1}) \odot \sigma'(z^{x,l})\)&lt;/span&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Compute gradients and apply the gradient descent method by
+&lt;div class="math"&gt;\begin{equation}
+\frac{\partial{C_x}}{\partial{w_{jk}^l}}=\delta_j^{x,l}a_k^{x,l-1},~~\frac{\partial{C_x}}{\partial{b_j^l}}=\delta_j^{x,l},~~w^l=w^l-\frac{\eta}{m}\sum_x{\delta^{x,l}(a^{x,l-1})^T},~~b^l=b^l-\frac{\eta}{m}\sum_x{\delta^{x,l}}.
+\end{equation}&lt;/div&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;Deep Learning&lt;/h3&gt;
+&lt;p&gt;Everything seems going well so far! What if our NNs are deep, i.e., with a lot of hidden layers? Typically we expect a deep NN could deliver better performance than shallow ones. Unfortunately it was observed that: for deep NNs, the learning speeds of the first few layers of neurons can be much higher/lower than those of the last few layers, in which case the NNs cannot be well trained. Click &lt;a href="http://neuralnetworksanddeeplearning.com/chap5.html#the_vanishing_gradient_problem"&gt;here&lt;/a&gt; to see why. This is known as &lt;em&gt;vanishing/exploding gradient problem&lt;/em&gt;. To resolve this problem, it is suggested that we should resort to convolutional networks.&lt;/p&gt;
+&lt;h4&gt;Convolutional Networks&lt;/h4&gt;
+&lt;p&gt;Convolutional neural networks use three basic ideas: local receptive fields, shared weights, and pooling. A typical convolutional network is depicted in Fig. 2, where the network includes one input layer, one convolutional layer, one pooling layer and one output layer (fully connected). We will try to understand the three ideas using this network as an example.&lt;/p&gt;
+&lt;figure align="center"&gt;
+&lt;img src="/figures/20160403/ConvN.png" alt="Convolutional Networks"&gt;
+&lt;figcaption align="center"&gt;Fig. 2: The convolutional networks.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;&lt;em&gt;Local receptive fields&lt;/em&gt;: Given a 28x28 image as the input layer, instead of directly connecting to all 28x28 pixels, the convolutional layer only connects to small, localized regions (local receptive fields) of the input image in the hope of detecting some localized features. In this example, the small region size is 5x5, so exploring all those regions with a stride length of one results into 24x24 neurons. Here we have three feature maps, so the convolutional layer eventually has 3x24x24 neurons.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Shared weights and biases&lt;/em&gt;: We use the same weights and bias for each neuron in a 24x24 feature map. It makes sense to use the same parameters in detecting the same feature but only in different local regions, and it can greatly reduce the number of parameters involved in a convolutional network compared to a fully connected layer.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;The pooling layer&lt;/em&gt;: A pooling layer is usually used immediately after a convolutional layer. What the pooling layer do is simplify the information in the output from the convolutional layer. In this example, each unit in the pooling layer summarizes a region of 2x2 in the previous convolutional layer, which results into 3x12x12 neurons. The pooling can be a max-pooling (finding the maximum activation of the region to be summarized) or L2 pooling (obtaining the square root of the sum of the squares of the activations in the region to be summarized).&lt;/p&gt;
+&lt;p&gt;To summarize, a convolutional network tries to detect localized features and at the same time greatly reduces the number of parameters. In principle, we could include any number of convolutional/pooling layers and also fully connected layers in our networks. What is exciting is that the backpropagation algorithm can apply to convolutional networks with only necessary minor modifications.&lt;/p&gt;
+&lt;p&gt;Does convolutional networks avoid the vanishing/exploding gradient problem? Not really, but it helps us to proceed anyway, e.g., by reducing the number of parameters. The problem can be considerably alleviated by convolutional/pooling layers as well as other techniques, such as powerful regularization, advanced artificial neurons and more training epochs by GPU.&lt;/p&gt;
+&lt;h4&gt;Deep Learning in Practice&lt;/h4&gt;
+&lt;p&gt;It may be not that hard to construct a very basic (deep) NN and achieve a nice performance. However, there are still many techniques that could help to improve the NN's performance. A couple of insightful ideas are listed below, which should be kept in mind if we are working towards a better NN.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Use more convolutional/pooling layers: reduce the number of parameters and make learning faster;&lt;/li&gt;
+&lt;li&gt;Use &lt;a href="http://neuralnetworksanddeeplearning.com/chap3.html#the_cross-entropy_cost_function"&gt;right cost functions&lt;/a&gt;: resolve the problem of learning slow down by the cross-entropy cost function;&lt;/li&gt;
+&lt;li&gt;Use &lt;a href="http://neuralnetworksanddeeplearning.com/chap3.html#overfitting_and_regularization"&gt;regularization&lt;/a&gt;: combat overfitting by L2/L1/drop-out regularization;&lt;/li&gt;
+&lt;li&gt;Use &lt;a href="http://neuralnetworksanddeeplearning.com/chap3.html#other_models_of_artificial_neuron"&gt;advanced neurons&lt;/a&gt;: for example, tanh neurons and rectified linear units;&lt;/li&gt;
+&lt;li&gt;Use &lt;a href="http://neuralnetworksanddeeplearning.com/chap3.html#weight_initialization"&gt;good weight initialization&lt;/a&gt;: avoid neuron saturation and learn faster;&lt;/li&gt;
+&lt;li&gt;Use an expanded training data set: for example, rotate/shift images as new training data in image classification;&lt;/li&gt;
+&lt;li&gt;Use an ensemble of NNs: heavy computation, but more models beat one;&lt;/li&gt;
+&lt;li&gt;Use GPU: gain more training epochs;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Acknowledgement&lt;/h3&gt;
+&lt;p&gt;A large majority of this post comes from Michael Nielsen's book&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt; entitled "neural networks and deep learning", which I would strongly recommend to anyone interested in discovering how essentially neural networks work.&lt;/p&gt;
+&lt;h3&gt;References&lt;/h3&gt;
+&lt;div class="footnote"&gt;
+&lt;hr /&gt;
+&lt;ol&gt;
+&lt;li id="fn:1"&gt;
+&lt;p&gt;M. Nielsen, &lt;em&gt;&lt;a href="http://neuralnetworksanddeeplearning.com/"&gt;Neural Networks and Deep Learning&lt;/a&gt;&lt;/em&gt;, Determination Press, 2015.&amp;#160;&lt;a class="footnote-backref" href="#fnref:1" rev="footnote" title="Jump back to footnote 1 in the text"&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' &amp;&amp; location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' }, Macros: {} }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Tianlong Song</dc:creator><pubDate>Sun, 03 Apr 2016 00:00:00 -0400</pubDate><guid>tag:stlong0521.github.io,2016-04-03:20160403 - NN and DL.html</guid><category>Machine Learning</category><category>Data Mining</category></item><item><title>Latent Dirichlet Allocation and Topic Modeling</title><link>https://stlong0521.github.io/20160326%20-%20LDA.html</link><description>&lt;p&gt;When reading an article, we humans are able to easily identify the topics the article talks about. An interesting question is: can we automate this process, i.e., train a machine to find out the underlying topics in articles? In this post, a very popular topic modeling method, Latent Dirichlet allocation (LDA), will be discussed.&lt;/p&gt;
 &lt;h3&gt;Latent Dirichlet Allocation (LDA) Topic Model&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt;&lt;/h3&gt;
 &lt;p&gt;Given a library of &lt;span class="math"&gt;\(M\)&lt;/span&gt; documents, &lt;span class="math"&gt;\(\mathcal{L}=\{d_1,d_2,...,d_M\}\)&lt;/span&gt;, where each document &lt;span class="math"&gt;\(d_m\)&lt;/span&gt; contains a sequence of words, &lt;span class="math"&gt;\(d_m=\{w_{m,1},w_{m,2},...,w_{m,N_m}\}\)&lt;/span&gt;, we need to think of a model which describes how essentially these documents are generated. Considering &lt;span class="math"&gt;\(K\)&lt;/span&gt; topics and a vocabulary &lt;span class="math"&gt;\(V\)&lt;/span&gt;, the LDA topic model assumes that the documents are generated by the following two steps:&lt;/p&gt;
 &lt;ul&gt;
@@ -139,7 +331,7 @@ where &lt;span class="math"&gt;\(n_m^{(k)}\)&lt;/span&gt; is the count of topic 
         "}";
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
-&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Tianlong Song</dc:creator><pubDate>Sat, 26 Mar 2016 00:00:00 -0400</pubDate><guid>tag:stlong0521.github.io,2016-03-26:20160326 - LDA.html</guid><category>Natural Language Processing</category><category>Machine Learning</category></item><item><title>Hidden Markov Model and Part of Speech Tagging</title><link>https://stlong0521.github.io/20160319%20-%20HMM%20and%20POS.html</link><description>&lt;p&gt;In a Markov model, we generally assume that the states are directly observable or one state corresponds to one observation/event only. However, this is not always true. A good example would be: in speech recognition, we are supposed to identify a sequence of words given a sequence of utterances, in which case the states (words) are not directly observable and one single state (word) could have different observations (utterances). This is a perfect example that could be treated as a hidden Markov model (HMM), by which the hidden states can be inferred from the observations.&lt;/p&gt;
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Tianlong Song</dc:creator><pubDate>Sat, 26 Mar 2016 00:00:00 -0400</pubDate><guid>tag:stlong0521.github.io,2016-03-26:20160326 - LDA.html</guid><category>Natural Language Processing</category><category>Machine Learning</category><category>Data Mining</category></item><item><title>Hidden Markov Model and Part of Speech Tagging</title><link>https://stlong0521.github.io/20160319%20-%20HMM%20and%20POS.html</link><description>&lt;p&gt;In a Markov model, we generally assume that the states are directly observable or one state corresponds to one observation/event only. However, this is not always true. A good example would be: in speech recognition, we are supposed to identify a sequence of words given a sequence of utterances, in which case the states (words) are not directly observable and one single state (word) could have different observations (utterances). This is a perfect example that could be treated as a hidden Markov model (HMM), by which the hidden states can be inferred from the observations.&lt;/p&gt;
 &lt;h3&gt;Elements of a Hidden Markov Model (HMM)&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt;&lt;/h3&gt;
 &lt;p&gt;A hidden Markov model, &lt;span class="math"&gt;\(\Phi\)&lt;/span&gt;, typically includes the following elements:&lt;/p&gt;
 &lt;ul&gt;
@@ -349,7 +541,7 @@ Then the model parameters can be recomputed as
         "}";
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
-&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Tianlong Song</dc:creator><pubDate>Sat, 19 Mar 2016 00:00:00 -0400</pubDate><guid>tag:stlong0521.github.io,2016-03-19:20160319 - HMM and POS.html</guid><category>Natural Language Processing</category><category>Machine Learning</category></item><item><title>Expectation Maximization Algorithm and Gaussian Mixture Model</title><link>https://stlong0521.github.io/20160312%20-%20EM%20and%20GMM.html</link><description>&lt;p&gt;In statistical modeling, it is possible that some observations are just missing. For example, when flipping two biased coins with unknown biases, we only have a sequence of observations on heads and tails, but forgot to record which coin each observation comes from. In this case, the conventional maximum likelihood (ML) or maximum a posteriori (MAP) algorithm would no longer be able to work, and it is time for the expectation maximization (EM) algorithm to come into play.&lt;/p&gt;
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Tianlong Song</dc:creator><pubDate>Sat, 19 Mar 2016 00:00:00 -0400</pubDate><guid>tag:stlong0521.github.io,2016-03-19:20160319 - HMM and POS.html</guid><category>Natural Language Processing</category><category>Machine Learning</category><category>Data Mining</category></item><item><title>Expectation Maximization Algorithm and Gaussian Mixture Model</title><link>https://stlong0521.github.io/20160312%20-%20EM%20and%20GMM.html</link><description>&lt;p&gt;In statistical modeling, it is possible that some observations are just missing. For example, when flipping two biased coins with unknown biases, we only have a sequence of observations on heads and tails, but forgot to record which coin each observation comes from. In this case, the conventional maximum likelihood (ML) or maximum a posteriori (MAP) algorithm would no longer be able to work, and it is time for the expectation maximization (EM) algorithm to come into play.&lt;/p&gt;
 &lt;h3&gt;A Motivating Example&lt;/h3&gt;
 &lt;p&gt;Although the two-biased-coin example above works as a valid example, another example will be discussed here, as it is more relevant to practical needs. Let us assume that we have a collection of float numbers, which come from two different Gaussian distributions. Unfortunately, we do not know which distribution each number comes from. Now we are supposed to learn the two Gaussian distributions (i,e, their means and variances) from the given data. This is the well-known Gaussian mixture model (GMM). What makes things difficult is that we have missing observations, i.e., membership of each number towards the two distributions. Though conventional ML or MAP would not work here, this is a perfect problem that EM can handle.&lt;/p&gt;
 &lt;h3&gt;Expectation Maximization (EM) Algorithm&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt;&lt;/h3&gt;
@@ -506,7 +698,7 @@ where &lt;span class="math"&gt;\(\gamma_{ij}=p(z_i=j|\textbf{x}_i)\)&lt;/span&gt
         "}";
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
-&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Tianlong Song</dc:creator><pubDate>Sat, 12 Mar 2016 00:00:00 -0500</pubDate><guid>tag:stlong0521.github.io,2016-03-12:20160312 - EM and GMM.html</guid><category>Data Science</category><category>Machine Learning</category></item><item><title>Locating and Filling Missing Words in Sentences</title><link>https://stlong0521.github.io/20160305%20-%20Missing%20Word.html</link><description>&lt;p&gt;There has been many occasions that we have incomplete sentences that are needed to completed. One example is that in speech recognition noisy environment can lead to unrecognizable words, but we still hope to recover and understand the complete sentence (e.g., by inference); another example is sentence completion questions that appear in language tests (e.g., SAT, GRE, etc.).&lt;/p&gt;
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Tianlong Song</dc:creator><pubDate>Sat, 12 Mar 2016 00:00:00 -0500</pubDate><guid>tag:stlong0521.github.io,2016-03-12:20160312 - EM and GMM.html</guid><category>Machine Learning</category><category>Data Mining</category></item><item><title>Locating and Filling Missing Words in Sentences</title><link>https://stlong0521.github.io/20160305%20-%20Missing%20Word.html</link><description>&lt;p&gt;There has been many occasions that we have incomplete sentences that are needed to completed. One example is that in speech recognition noisy environment can lead to unrecognizable words, but we still hope to recover and understand the complete sentence (e.g., by inference); another example is sentence completion questions that appear in language tests (e.g., SAT, GRE, etc.).&lt;/p&gt;
 &lt;h3&gt;What are Exactly the Problem?&lt;/h3&gt;
 &lt;p&gt;Generally, the problem we are aiming to solve is locating and filling any missing words in incomplete sentences. However, this problem seems too ambitious so far, and we direct ourselves to a simplified version of this problem. To simplify the problem, we assume that there is only one missing word in a sentence, and the missing word is neither the first word nor the last word of the sentence. This problem originally comes from &lt;a href="https://www.kaggle.com/c/billion-word-imputation"&gt;here&lt;/a&gt;.&lt;/p&gt;
 &lt;h3&gt;Locating the Missing Word&lt;/h3&gt;
@@ -854,6 +1046,6 @@ Note that we have "&lt;span class="math"&gt;\(+\)&lt;/span&gt;" in (\ref{Eqn:Ite
         "}";
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
-&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Tianlong Song</dc:creator><pubDate>Sun, 28 Feb 2016 00:00:00 -0500</pubDate><guid>tag:stlong0521.github.io,2016-02-28:20160228 - Logistic Regression.html</guid><category>Data Science</category><category>Machine Learning</category></item><item><title>About Tianlong Song</title><link>https://stlong0521.github.io/about.html</link><description>&lt;p&gt;Tianlong Song is currently a PhD student in the Department of Electrical &amp;amp; Computer Engineering at Michigan State University. His interests are primarily focused on data science, machine learning, natural language processing and software engineering.&lt;/p&gt;
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Tianlong Song</dc:creator><pubDate>Sun, 28 Feb 2016 00:00:00 -0500</pubDate><guid>tag:stlong0521.github.io,2016-02-28:20160228 - Logistic Regression.html</guid><category>Machine Learning</category><category>Data Mining</category></item><item><title>About Tianlong Song</title><link>https://stlong0521.github.io/about.html</link><description>&lt;p&gt;Tianlong Song is currently a PhD student in the Department of Electrical &amp;amp; Computer Engineering at Michigan State University. His interests are primarily focused on machine learning, data mining, natural language processing and software engineering.&lt;/p&gt;
 &lt;p&gt;His blog keeps the records on how he moved forward little by little in these areas, and he would love to share them with anyone who might be interested. He is happy to exchange ideas in any way, so please do not hesitate to reach him via the email below.&lt;/p&gt;
 &lt;p&gt;Tianlong's Email: stlong0521@gmail.com&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Tianlong Song</dc:creator><pubDate>Thu, 25 Feb 2016 00:00:00 -0500</pubDate><guid>tag:stlong0521.github.io,2016-02-25:about.html</guid></item></channel></rss>
