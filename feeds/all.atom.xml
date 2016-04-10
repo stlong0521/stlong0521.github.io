@@ -1,5 +1,139 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Tianlong's Blog</title><link href="https://stlong0521.github.io/" rel="alternate"></link><link href="https://stlong0521.github.io/feeds/all.atom.xml" rel="self"></link><id>https://stlong0521.github.io/</id><updated>2016-04-03T00:00:00-04:00</updated><entry><title>Neural Networks and Deep Learning</title><link href="https://stlong0521.github.io/20160403%20-%20NN%20and%20DL.html" rel="alternate"></link><updated>2016-04-03T00:00:00-04:00</updated><author><name>Tianlong Song</name></author><id>tag:stlong0521.github.io,2016-04-03:20160403 - NN and DL.html</id><summary type="html">&lt;p&gt;It has been a long time since the idea of neural networks was proposed, but it is really during the last few years that neural networks have become widely used. One of the major enablers is the infrastructure with high computational capability (e.g., cloud computing), which makes the training of large and deep (multilayer) neural networks possible. This post is in no way an exhaustive review of neural networks or deep learning, but rather an entry-level introduction excerpted from a very popular book&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt;.&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Tianlong's Blog</title><link href="https://stlong0521.github.io/" rel="alternate"></link><link href="https://stlong0521.github.io/feeds/all.atom.xml" rel="self"></link><id>https://stlong0521.github.io/</id><updated>2016-04-09T00:00:00-04:00</updated><entry><title>Monte Carlo Tree Search and Its Application in AlphaGo</title><link href="https://stlong0521.github.io/201604039%20-%20MCTS.html" rel="alternate"></link><updated>2016-04-09T00:00:00-04:00</updated><author><name>Tianlong Song</name></author><id>tag:stlong0521.github.io,2016-04-09:201604039 - MCTS.html</id><summary type="html">&lt;p&gt;As one of the most important methods in artificial intelligence (AI), especially for playing games, Monte Carlo tree search (MCTS) has received considerable interest due to its spectacular success in the difficult problem of computer Go. In fact, most successful computer Go algorithms are powered by MCTS, including the recent success of Google's AlphaGo&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt;. This post introduces MCTS and explains how it is used in AlphaGo.&lt;/p&gt;
+&lt;h3&gt;Warm Up: Bandit-Based Methods&lt;sup id="fnref:2"&gt;&lt;a class="footnote-ref" href="#fn:2" rel="footnote"&gt;2&lt;/a&gt;&lt;/sup&gt;&lt;/h3&gt;
+&lt;p&gt;&lt;em&gt;Bandit problems&lt;/em&gt; are a well-known class of sequential decision problems, in which one needs to choose among &lt;span class="math"&gt;\(K\)&lt;/span&gt; actions (e.g. the &lt;span class="math"&gt;\(K\)&lt;/span&gt; arms of a multi-armed bandit slot machine) in order to maximize the cumulative reward by consistently taking the optimal action. The choice of action is difficult as the underlying reward distributions are unknown, and potential rewards must be estimated based on past observations. This leads to the &lt;em&gt;exploitation-exploration dilemma&lt;/em&gt;: one needs to balance the exploitation of the action currently believed to be optimal with the exploration of other actions that currently appear suboptimal but may turn out to be superior in the long run.&lt;/p&gt;
+&lt;p&gt;The primary goal is to find a policy that can minimize the player's regret after &lt;span class="math"&gt;\(n\)&lt;/span&gt; plays, which is the difference between: (i) the best possible total reward if the player could at the beginning have the knowledge of the reward distributions that is actually learned afterwards; and (ii) the actual total reward from the &lt;span class="math"&gt;\(n\)&lt;/span&gt; finished plays. In other words, the regret is the expected loss due to not playing the best bandit. An upper confidence bound (UCB) policy has been proposed, which has an expected logarithmic growth of regret uniformly over the total number of plays &lt;span class="math"&gt;\(n\)&lt;/span&gt; without any prior knowledge regarding the reward distributions. According to the UCB policy, to minimize his regret, for the current play, the player should choose arm &lt;span class="math"&gt;\(j\)&lt;/span&gt; that maximizes:
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{equation}
+\overline{X}_j+\sqrt{\frac{2\ln{n}}{n_j}},
+\end{equation}&lt;/div&gt;
+&lt;p&gt;
+where &lt;span class="math"&gt;\(\overline{X}_j\)&lt;/span&gt; is the average reward from arm &lt;span class="math"&gt;\(j\)&lt;/span&gt;, &lt;span class="math"&gt;\(n_j\)&lt;/span&gt; is the number of times arm &lt;span class="math"&gt;\(j\)&lt;/span&gt; was played and &lt;span class="math"&gt;\(n\)&lt;/span&gt; is the total number of plays so far. The physical meaning is that: the term &lt;span class="math"&gt;\(\overline{X}_j\)&lt;/span&gt; encourages the exploitation of higher-rewarded choices, while the term &lt;span class="math"&gt;\(\sqrt{\frac{2\ln{n}}{n_j}}\)&lt;/span&gt; encourages the exploration of less-visited choices.&lt;/p&gt;
+&lt;h3&gt;Monte Carlo Tree Search (MCTS)&lt;sup id="fnref:2"&gt;&lt;a class="footnote-ref" href="#fn:2" rel="footnote"&gt;2&lt;/a&gt;&lt;/sup&gt;&lt;/h3&gt;
+&lt;p&gt;Let us use the board game as an example. Given a board state, the primary goal would be finding out the best action that should be taken currently, which should naturally be chosen according to some precomputed value of each action. The purpose of MCTS is to approximate the (true) values of actions that may be taken from the current board state. This is achieved by iteratively building a partial search tree.&lt;/p&gt;
+&lt;h4&gt;Four Fundamental Steps in Each Iteration&lt;/h4&gt;
+&lt;p&gt;The basic algorithm involves iteratively building a search tree until some predefined computational budget (e.g., time, memory or iteration constraint) is reached, at which point the search is halted and the best-performing root action returned. Each node in the search tree represents a state, and directed links to child nodes represent actions leading to subsequent states.&lt;/p&gt;
+&lt;figure align="center"&gt;
+&lt;img src="/figures/20160409/MCTS.png" alt="MCTS"&gt;
+&lt;figcaption align="center"&gt;Fig. 1: Four steps in one iteration of MCTS.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;As illustrate in Fig. 1, four steps are applied for each iteration&lt;sup id="fnref:2"&gt;&lt;a class="footnote-ref" href="#fn:2" rel="footnote"&gt;2&lt;/a&gt;&lt;/sup&gt;:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Selection: Starting from the root node (i.e., current state), a tree policy for child selection is recursively applied to descend through the tree until an expandable node is reached. A node is expandable if it represents a non-terminal state and has unvisited (i.e., expandable) children.&lt;/li&gt;
+&lt;li&gt;Expansion: For the expandable node we reached in the selection step, one child node is added to expand the tree, according to the available actions.&lt;/li&gt;
+&lt;li&gt;Simulation: A simulation is run from the newly expanded node according to the default policy to produce an outcome (e.g., win or lose when reaching a terminal state).&lt;/li&gt;
+&lt;li&gt;Backpropagation: The simulated result is backpropagated through the selected nodes in the selection step to update their statistics.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;There are two essential ideas that should be highlighted here:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The tree policy for child selection should be able to give the high-value nodes priorities in value approximation, and meanwhile explore the less-visited nodes. This is quite similar to the bandit problem, so we can apply the UCB policy to choose the child node.&lt;/li&gt;
+&lt;li&gt;The value of each node is approximated in an incremental way. That is, its initial value is obtained from a random simulation by the default policy (e.g., a win/lose result along a random path), and then refined by the backpropagation steps during the following iterations.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;The Full Algorithm Description&lt;/h4&gt;
+&lt;p&gt;Before describing the algorithm, let us define some notations first.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(s(v)\)&lt;/span&gt;: the associated state to node &lt;span class="math"&gt;\(v\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(a(v)\)&lt;/span&gt;: the incoming action that leads to node &lt;span class="math"&gt;\(v\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(N(v)\)&lt;/span&gt;: the visit count of node &lt;span class="math"&gt;\(v\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(Q(v)\)&lt;/span&gt;: the vector of total simulation rewards of node &lt;span class="math"&gt;\(v\)&lt;/span&gt; for all players&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;The main procedure of the MCTS algorithm is described below, which essentially executes the four fundamental steps for each iteration until the computational budget is reached. It returns the best action that should be taken for the current state.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/figures/20160409/Main.png" alt="Main"&gt;&lt;/p&gt;
+&lt;p&gt;The selection step is described below, which returns the expandable node according to the tree policy.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/figures/20160409/TreePolicy.png" alt="TreePolicy"&gt;&lt;/p&gt;
+&lt;p&gt;The child selection is described below, which returns the best child of a given node. It essentially applies the UCB method, which uses a constant &lt;span class="math"&gt;\(c\)&lt;/span&gt; to balance the exploitation with the exploration. It should be noted that there might be multiple players, but the best child is selected as per the interest of the player who is supposed to play in this state.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/figures/20160409/BestChild.png" alt="BestChild"&gt;&lt;/p&gt;
+&lt;p&gt;The selected node after the selection step is expanded by choosing one of its unvisited children, and then adding the associated data to the new node. The procedure is described below.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/figures/20160409/Expand.png" alt="Expand"&gt;&lt;/p&gt;
+&lt;p&gt;Given the state associating to the newly expanded node, a random simulation is run as indicated below, which finds a random path to a terminal state and returns the simulated reward.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/figures/20160409/DefaultPolicy.png" alt="DefaultPolicy"&gt;&lt;/p&gt;
+&lt;p&gt;Once the simulated reward of the newly expanded node is obtained, it is backpropagated through the selected nodes in the selection step. The visit counts are updated at the same time.&lt;/p&gt;
+&lt;p&gt;&lt;img src="/figures/20160409/Backup.png" alt="Backup"&gt;&lt;/p&gt;
+&lt;p&gt;Recall the board game example, assume that the rewards of winning and losing a game are 1 and 0, respectively. After applying the MCTS algorithm, for each node &lt;span class="math"&gt;\(v\)&lt;/span&gt; in the tree, &lt;span class="math"&gt;\(Q(v)\)&lt;/span&gt; would be the number of wins that is accumulated from &lt;span class="math"&gt;\(N(v)\)&lt;/span&gt; visits of this node, and thus &lt;span class="math"&gt;\(\frac{Q(v)}{N(v)}\)&lt;/span&gt; would be the winning rate. This is exactly the information we could rely on to choose the best action to take in the current state.&lt;/p&gt;
+&lt;h3&gt;How is MCTS used by Google's AlphaGo?&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt;&lt;/h3&gt;
+&lt;p&gt;We now understand how MCTS works. Can MCTS be directly applied to computer Go? Not really. The reason is that Go is a very high-branching game. Consider the number of all possible sequences of moves, &lt;span class="math"&gt;\(b^d\)&lt;/span&gt;, where &lt;span class="math"&gt;\(b\)&lt;/span&gt; is the game's breadth (number of legal moves per state, &lt;span class="math"&gt;\(b \approx 250\)&lt;/span&gt; for Go), and &lt;span class="math"&gt;\(d\)&lt;/span&gt; is game's depth (game length, &lt;span class="math"&gt;\(d \approx 150\)&lt;/span&gt; for Go). Exhaustive search is computationally impossible, and directly applying MCTS to Go helps little, since the limited number of simulations could only scratch the surface of the giant search space.&lt;/p&gt;
+&lt;p&gt;Aided by the useful information learned by two deep convolutional neural networks (a.k.a., &lt;a href="https://stlong0521.github.io/20160403%20-%20NN%20and%20DL.html"&gt;deep learning&lt;/a&gt;), policy network and value network, Google's AlphaGo applies MCTS in an innovative way. &lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;First, for the tree policy to select child, instead of using the UCB method, AlphaGo takes into account the prior probability of actions learned by the policy network. More specifically, for node &lt;span class="math"&gt;\(v_0\)&lt;/span&gt;, the child &lt;span class="math"&gt;\(v\)&lt;/span&gt; is selected by maximizing
+&lt;div class="math"&gt;\begin{equation}
+\frac{Q(v)}{N(v)}+\frac{P(v|v_0)}{1+N(v)},
+\end{equation}&lt;/div&gt;
+where &lt;span class="math"&gt;\(P(v|v_0)\)&lt;/span&gt; is the prior probability that is provided by the policy network. This greatly improves the child selection policy, and thus grants more professional moves (e.g., by human experts) priorities in MCTS simulation.&lt;/li&gt;
+&lt;li&gt;Second, for the default policy to evaluate expanded nodes, AlphaGo combines the outcomes from simulation steps and node values learned by the value network, and their weights are balanced by a constant &lt;span class="math"&gt;\(\lambda\)&lt;/span&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Note that both the policy network and value network are trained offline, which greatly reduces the time cost in a real-time contest.&lt;/p&gt;
+&lt;h3&gt;Acknowledgement&lt;/h3&gt;
+&lt;p&gt;A large majority of this post, including Fig. 1 and the pseudo codes, comes from the survey paper&lt;sup id="fnref:2"&gt;&lt;a class="footnote-ref" href="#fn:2" rel="footnote"&gt;2&lt;/a&gt;&lt;/sup&gt;. More details about MCTS and its variants can be found there.&lt;/p&gt;
+&lt;h3&gt;References&lt;/h3&gt;
+&lt;div class="footnote"&gt;
+&lt;hr /&gt;
+&lt;ol&gt;
+&lt;li id="fn:1"&gt;
+&lt;p&gt;D. Silver, et al., &lt;em&gt;&lt;a href="http://www.nature.com/nature/journal/v529/n7587/full/nature16961.html"&gt;Mastering the game of Go with deep neural networks and tree search&lt;/a&gt;&lt;/em&gt;, Nature, 2016.&amp;#160;&lt;a class="footnote-backref" href="#fnref:1" rev="footnote" title="Jump back to footnote 1 in the text"&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:2"&gt;
+&lt;p&gt;C. Browne, et al., &lt;em&gt;&lt;a href="http://www.cameronius.com/cv/mcts-survey-master.pdf"&gt;A Survey of Monte Carlo Tree Search Methods&lt;/a&gt;&lt;/em&gt;, IEEE Transactions on Computational Intelligence and AI in Gamges, 2012.&amp;#160;&lt;a class="footnote-backref" href="#fnref:2" rev="footnote" title="Jump back to footnote 2 in the text"&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' &amp;&amp; location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' }, Macros: {} }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</summary><category term="Machine Learning"></category></entry><entry><title>Neural Networks and Deep Learning</title><link href="https://stlong0521.github.io/20160403%20-%20NN%20and%20DL.html" rel="alternate"></link><updated>2016-04-03T00:00:00-04:00</updated><author><name>Tianlong Song</name></author><id>tag:stlong0521.github.io,2016-04-03:20160403 - NN and DL.html</id><summary type="html">&lt;p&gt;It has been a long time since the idea of neural networks was proposed, but it is really during the last few years that neural networks have become widely used. One of the major enablers is the infrastructure with high computational capability (e.g., cloud computing), which makes the training of large and deep (multilayer) neural networks possible. This post is in no way an exhaustive review of neural networks or deep learning, but rather an entry-level introduction excerpted from a very popular book&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt;.&lt;/p&gt;
 &lt;h3&gt;Neural Network (NN) Basics&lt;/h3&gt;
 &lt;p&gt;Let us start with sigmoid neurons, and then find out how they are used in NNs.&lt;/p&gt;
 &lt;h4&gt;Sigmoid Neurons&lt;/h4&gt;
@@ -121,11 +255,11 @@ where &lt;span class="math"&gt;\(\nabla_{a^L}C=\{\frac{\partial{C}}{\partial{a_j
 &lt;li&gt;Use &lt;a href="http://neuralnetworksanddeeplearning.com/chap3.html#other_models_of_artificial_neuron"&gt;advanced neurons&lt;/a&gt;: for example, tanh neurons and rectified linear units;&lt;/li&gt;
 &lt;li&gt;Use &lt;a href="http://neuralnetworksanddeeplearning.com/chap3.html#weight_initialization"&gt;good weight initialization&lt;/a&gt;: avoid neuron saturation and learn faster;&lt;/li&gt;
 &lt;li&gt;Use an expanded training data set: for example, rotate/shift images as new training data in image classification;&lt;/li&gt;
-&lt;li&gt;Use an ensemble of NNs: heavy computation, but more models beat one;&lt;/li&gt;
+&lt;li&gt;Use an ensemble of NNs: heavy computation, but multiple models beat one;&lt;/li&gt;
 &lt;li&gt;Use GPU: gain more training epochs;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h3&gt;Acknowledgement&lt;/h3&gt;
-&lt;p&gt;A large majority of this post comes from Michael Nielsen's book&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt; entitled "neural networks and deep learning", which I would strongly recommend to anyone interested in discovering how essentially neural networks work.&lt;/p&gt;
+&lt;p&gt;A large majority of this post comes from Michael Nielsen's book&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt; entitled "Neural Networks and Deep Learning", which I strongly recommend to anyone interested in discovering how essentially neural networks work.&lt;/p&gt;
 &lt;h3&gt;References&lt;/h3&gt;
 &lt;div class="footnote"&gt;
 &lt;hr /&gt;

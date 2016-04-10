@@ -62,150 +62,92 @@
 
 <!--     <div class='article'>
         <div class="content-title">
-            <a href="https://stlong0521.github.io/20160403 - NN and DL.html"><h1>Neural Networks and Deep Learning</h1></a>
-Sun 03 Apr 2016
+            <a href="https://stlong0521.github.io/201604039 - MCTS.html"><h1>Monte Carlo Tree Search and Its Application in AlphaGo</h1></a>
+Sat 09 Apr 2016
 
 by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
  
 
 
  
-    Tags <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a> <a href="https://stlong0521.github.io/tag/data-mining.html">Data Mining</a>  
+    Tags <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  
         </div>
         
-        <div><p>It has been a long time since the idea of neural networks was proposed, but it is really during the last few years that neural networks have become widely used. One of the major enablers is the infrastructure with high computational capability (e.g., cloud computing), which makes the training of large and deep (multilayer) neural networks possible. This post is in no way an exhaustive review of neural networks or deep learning, but rather an entry-level introduction excerpted from a very popular book<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup>.</p>
-<h3>Neural Network (NN) Basics</h3>
-<p>Let us start with sigmoid neurons, and then find out how they are used in NNs.</p>
-<h4>Sigmoid Neurons</h4>
-<p>As the smallest unit in NNs, a sigmoid neuron mimics the behaviour of a real neuron in human neural systems. It takes multiple inputs and generates one single output, as in a process of local or partial decision making. More specifically, given a series of inputs <span class="math">\([x_1,x_2,...]\)</span>, a neuron applies the sigmoid function to the weighted sum of the inputs plus a bias, i.e., the output of the neuron is computed as
+        <div><p>As one of the most important methods in artificial intelligence (AI), especially for playing games, Monte Carlo tree search (MCTS) has received considerable interest due to its spectacular success in the difficult problem of computer Go. In fact, most successful computer Go algorithms are powered by MCTS, including the recent success of Google's AlphaGo<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup>. This post introduces MCTS and explains how it is used in AlphaGo.</p>
+<h3>Warm Up: Bandit-Based Methods<sup id="fnref:2"><a class="footnote-ref" href="#fn:2" rel="footnote">2</a></sup></h3>
+<p><em>Bandit problems</em> are a well-known class of sequential decision problems, in which one needs to choose among <span class="math">\(K\)</span> actions (e.g. the <span class="math">\(K\)</span> arms of a multi-armed bandit slot machine) in order to maximize the cumulative reward by consistently taking the optimal action. The choice of action is difficult as the underlying reward distributions are unknown, and potential rewards must be estimated based on past observations. This leads to the <em>exploitation-exploration dilemma</em>: one needs to balance the exploitation of the action currently believed to be optimal with the exploration of other actions that currently appear suboptimal but may turn out to be superior in the long run.</p>
+<p>The primary goal is to find a policy that can minimize the player's regret after <span class="math">\(n\)</span> plays, which is the difference between: (i) the best possible total reward if the player could at the beginning have the knowledge of the reward distributions that is actually learned afterwards; and (ii) the actual total reward from the <span class="math">\(n\)</span> finished plays. In other words, the regret is the expected loss due to not playing the best bandit. An upper confidence bound (UCB) policy has been proposed, which has an expected logarithmic growth of regret uniformly over the total number of plays <span class="math">\(n\)</span> without any prior knowledge regarding the reward distributions. According to the UCB policy, to minimize his regret, for the current play, the player should choose arm <span class="math">\(j\)</span> that maximizes:
 </p>
 <div class="math">\begin{equation}
-\sigma(z)=\sigma(\sum_j{w_jx_j}+b)=\frac{1}{1+\exp(-\sum_j{w_jx_j}-b)},
+\overline{X}_j+\sqrt{\frac{2\ln{n}}{n_j}},
 \end{equation}</div>
 <p>
-where <span class="math">\(z=\sum_j{w_jx_j}+b\)</span> is the weighted input to the neuron, and the sigmoid function, <span class="math">\(\sigma(z)=\frac{1}{1+\exp(-z)}\)</span>, is to approximate the step function as usually used in binary decision making. A natural question is: why do not we just use the step function? The answer is that the step function is not smooth (not differentiable at origin), which disables the gradient method in model learning. With the smoothed version of the step function, we are safe to relate the change at the output to the weight/bias changes by
-</p>
-<div class="math">\begin{equation}
-\Delta{output}=\sum_j{\frac{\partial{output}}{\partial{w_j}}\Delta{w_j}}+\frac{\partial{output}}{\partial{b}}\Delta{b}.
-\end{equation}</div>
-<h4>The Architecture of NNs</h4>
-<p>The architecture of a typical NN is depicted in Fig. 1. As shown, the leftmost layer in this network is called the input layer, and the neurons within this layer are called input neurons. The rightmost or output layer contains the output neuron(s). The middle layer is called a hidden layer, since the neurons in this layer are neither inputs nor outputs.</p>
+where <span class="math">\(\overline{X}_j\)</span> is the average reward from arm <span class="math">\(j\)</span>, <span class="math">\(n_j\)</span> is the number of times arm <span class="math">\(j\)</span> was played and <span class="math">\(n\)</span> is the total number of plays so far. The physical meaning is that: the term <span class="math">\(\overline{X}_j\)</span> encourages the exploitation of higher-rewarded choices, while the term <span class="math">\(\sqrt{\frac{2\ln{n}}{n_j}}\)</span> encourages the exploration of less-visited choices.</p>
+<h3>Monte Carlo Tree Search (MCTS)<sup id="fnref:2"><a class="footnote-ref" href="#fn:2" rel="footnote">2</a></sup></h3>
+<p>Let us use the board game as an example. Given a board state, the primary goal would be finding out the best action that should be taken currently, which should naturally be chosen according to some precomputed value of each action. The purpose of MCTS is to approximate the (true) values of actions that may be taken from the current board state. This is achieved by iteratively building a partial search tree.</p>
+<h4>Four Fundamental Steps in Each Iteration</h4>
+<p>The basic algorithm involves iteratively building a search tree until some predefined computational budget (e.g., time, memory or iteration constraint) is reached, at which point the search is halted and the best-performing root action returned. Each node in the search tree represents a state, and directed links to child nodes represent actions leading to subsequent states.</p>
 <figure align="center">
-<img src="/figures/20160403/NN.png" alt="Neural Network Architecture">
-<figcaption align="center">Fig. 1: The neural network architecture.</figcaption>
+<img src="/figures/20160409/MCTS.png" alt="MCTS">
+<figcaption align="center">Fig. 1: Four steps in one iteration of MCTS.</figcaption>
 </figure>
 
-<p>It was proved that NNs with a single hidden layer can be used to approximate any continuous function to any desired precision. Click <a href="http://neuralnetworksanddeeplearning.com/chap4.html">here</a> to see how. It can be expected that a NN with more neurons/layers could be more accurate in the approximation.</p>
-<h4>Learning with Gradient Descent</h4>
-<p>Before training a model, we first need to find a way to quantify how well we are achieving. That is, we need to introduce a cost function. Although there are many cost functions available, we will start with the quadratic cost function, which is defined as
-</p>
-<div class="math">\begin{equation}
-C(w,b)=\frac{1}{2n}\sum_x{||y(x)-a||^2},
-\end{equation}</div>
-<p>
-where <span class="math">\(w\)</span> denotes the collection of all weights in the network, <span class="math">\(b\)</span> all the biases, <span class="math">\(n\)</span> is the total number of training inputs, <span class="math">\(a\)</span> is the vector of outputs from the network when <span class="math">\(x\)</span> is input, and the sum is over all training inputs, <span class="math">\(x\)</span>.</p>
-<p>Applying the gradient descent method, we can learn the weights and biases by
-</p>
-<div class="math">\begin{equation}
-w_k'=w_k-\eta\frac{\partial{C}}{\partial{w_k}},
-\end{equation}</div>
-<div class="math">\begin{equation}
-b_l'=b_l-\eta\frac{\partial{C}}{\partial{b_l}}.
-\end{equation}</div>
-<p>
-To compute each gradient, we need to take into account all the training input <span class="math">\(x\)</span> in each iteration. However, this slows the learning down if the training data size is large. An idea called <em>stochastic gradient descent (a.k.a., mini-batch learning)</em> can be used to speed up learning. The idea is to estimate the gradient by computing it for a small sample of randomly chosen training inputs.</p>
-<h3>The Backpropagation Algorithm: How to Compute Gradients of the Cost Function?</h3>
-<p>So far we have known that the model parameters can be learned by the gradient descent method, but the computation of the gradients can be challenging by itself. Note that the network size and the data size can both be very large. In this section, we will see how the backpropagation algorithm helps compute the gradients efficiently.</p>
-<h4>Matrix Notation for NNs</h4>
-<p>For ease of presentation, let us define some notations first.</p>
-<blockquote>
-<p><span class="math">\(w_{jk}^l\)</span>: weight from the <span class="math">\(k\)</span>th neuron in layer <span class="math">\(l-1\)</span> to the <span class="math">\(j\)</span>th neuron in layer <span class="math">\(l\)</span>;</p>
-<p><span class="math">\(w^l=\{w_{jk}^l\}\)</span>: matrix including all weights from each neuron in layer <span class="math">\(l-1\)</span> to each neuron in layer <span class="math">\(l\)</span>;</p>
-<p><span class="math">\(b_j^l\)</span>: bias for the <span class="math">\(j\)</span>th neuron in layer <span class="math">\(l\)</span>;</p>
-<p><span class="math">\(b^l=\{b_j^l\}\)</span>: column vector including all biases for each neuron in layer <span class="math">\(l\)</span>;</p>
-<p><span class="math">\(a_j^l=\sigma(\sum_k{w_{jk}^la_k^{l-1}+b_j^l})\)</span>: activation of the <span class="math">\(j\)</span>th neuron in layer <span class="math">\(l\)</span>;</p>
-<p><span class="math">\(a^l=\{a_j^l\}=\sigma(w^la^{l-1}+b^l)\)</span>: column vector including all activations of each neuron in layer <span class="math">\(l\)</span>;</p>
-<p><span class="math">\(z_j^l=\sum_k{w_{jk}^la_k^{l-1}+b_j^l}\)</span>: weighted input to the <span class="math">\(j\)</span>th neuron in layer <span class="math">\(l\)</span>;</p>
-<p><span class="math">\(z^l=\{z_j^l\}=w^la^{l-1}+b^l\)</span>: column vector including all weighted inputs to each neuron in layer <span class="math">\(l\)</span>;</p>
-<p><span class="math">\(\delta_j^l=\frac{\partial{C}}{\partial{z_j^l}}\)</span>: gradient of the cost function w.r.t. the weighted input to the <span class="math">\(j\)</span>th neuron in layer <span class="math">\(l\)</span>, <span class="math">\(z_j^l\)</span>;</p>
-<p><span class="math">\(\delta^l=\{\delta_j^l\}\)</span>: column vector including all gradients of the cost function w.r.t. the weighted input to each neuron in layer <span class="math">\(l\)</span>.</p>
-</blockquote>
-<h4>Four Fundamental Equations behind Backpropagation</h4>
-<p>There are four fundamental equations behind backpropagation, which will be explained one by one as below.</p>
-<p><em>First</em>, the gradient of the cost function w.r.t. the weighted input to each neuron in output layer <span class="math">\(L\)</span> can be computed as
-</p>
-<div class="math">\begin{equation}
-\delta^L=\nabla_{a^L}C \odot \sigma'(z^L),
-\end{equation}</div>
-<p>
-where <span class="math">\(\nabla_{a^L}C=\{\frac{\partial{C}}{\partial{a_j^L}}\}\)</span> is defined to be a column vector whose components are the partial derivatives <span class="math">\(\frac{\partial{C}}{\partial{a_j^L}}\)</span>, <span class="math">\(\sigma'(z)\)</span> is the first-order derivative of the sigmoid function <span class="math">\(\sigma(z)\)</span>, and <span class="math">\(\odot\)</span> represents an element-wise product.</p>
-<p><em>Second</em>, the gradient of the cost function w.r.t. the weighted input to each neuron in layer <span class="math">\(l(l&lt;L)\)</span> can be computed from the results of layer <span class="math">\(l+1\)</span> (backpropagation), i.e.,
-</p>
-<div class="math">\begin{equation}
-\delta^l=((w^{l+1})^T\delta^{l+1}) \odot \sigma'(z^l).
-\end{equation}</div>
-<p><em>Third</em>, the gradient of the cost function w.r.t. each bias can be computed as
-</p>
-<div class="math">\begin{equation}
-\frac{\partial{C}}{\partial{b_j^l}}=\delta_j^l.
-\end{equation}</div>
-<p><em>Fourth</em>, the gradient of the cost function w.r.t. each weight can be computed as
-</p>
-<div class="math">\begin{equation}
-\frac{\partial{C}}{\partial{w_{jk}^l}}=\delta_j^la_k^{l-1}.
-\end{equation}</div>
-<p>The four equations above are not straightforward at first sight, but they are all consequences of the chain rule from multivariable calculus. The proof can be found <a href="http://neuralnetworksanddeeplearning.com/chap2.html#proof_of_the_four_fundamental_equations_(optional)">here</a>.</p>
-<h4>The Backpropagation Algorithm</h4>
-<p>The backpropagation algorithm essentially includes a feedforward process and a backpropagation process. More specifically, in each iteration:</p>
+<p>As illustrate in Fig. 1, four steps are applied for each iteration<sup id="fnref:2"><a class="footnote-ref" href="#fn:2" rel="footnote">2</a></sup>:</p>
 <ol>
-<li>Input a mini-batch of <span class="math">\(m\)</span> training examples;</li>
-<li>For each training example <span class="math">\(x\)</span>:<ul>
-<li>Initialization: set the activations of the input layer by <span class="math">\(a^{x,1}=x\)</span>;</li>
-<li>Feedforward: for each <span class="math">\(l=2,3,...,L\)</span>, compute <span class="math">\(z^{x,l}=w^la^{x,l-1}+b^l\)</span> and <span class="math">\(a^{x,l}=\sigma(z^{x,l})\)</span>;</li>
-<li>Output error: compute the error vector <span class="math">\(\delta^{x,L}=\nabla_{a^L}C_x \odot \sigma'(z^{x,L})\)</span>;</li>
-<li>Backpropagate the error: for <span class="math">\(l=L-1,L-2,...,2\)</span>, compute <span class="math">\(\delta^{x,l}=((w^{l+1})^T\delta^{x,l+1}) \odot \sigma'(z^{x,l})\)</span>.</li>
-</ul>
-</li>
-<li>Compute gradients and apply the gradient descent method by
-<div class="math">\begin{equation}
-\frac{\partial{C_x}}{\partial{w_{jk}^l}}=\delta_j^{x,l}a_k^{x,l-1},~~\frac{\partial{C_x}}{\partial{b_j^l}}=\delta_j^{x,l},~~w^l=w^l-\frac{\eta}{m}\sum_x{\delta^{x,l}(a^{x,l-1})^T},~~b^l=b^l-\frac{\eta}{m}\sum_x{\delta^{x,l}}.
-\end{equation}</div>
-</li>
+<li>Selection: Starting from the root node (i.e., current state), a tree policy for child selection is recursively applied to descend through the tree until an expandable node is reached. A node is expandable if it represents a non-terminal state and has unvisited (i.e., expandable) children.</li>
+<li>Expansion: For the expandable node we reached in the selection step, one child node is added to expand the tree, according to the available actions.</li>
+<li>Simulation: A simulation is run from the newly expanded node according to the default policy to produce an outcome (e.g., win or lose when reaching a terminal state).</li>
+<li>Backpropagation: The simulated result is backpropagated through the selected nodes in the selection step to update their statistics.</li>
 </ol>
-<h3>Deep Learning</h3>
-<p>Everything seems going well so far! What if our NNs are deep, i.e., with a lot of hidden layers? Typically we expect a deep NN could deliver better performance than shallow ones. Unfortunately it was observed that: for deep NNs, the learning speeds of the first few layers of neurons can be much higher/lower than those of the last few layers, in which case the NNs cannot be well trained. Click <a href="http://neuralnetworksanddeeplearning.com/chap5.html#the_vanishing_gradient_problem">here</a> to see why. This is known as <em>vanishing/exploding gradient problem</em>. To resolve this problem, it is suggested that we should resort to convolutional networks.</p>
-<h4>Convolutional Networks</h4>
-<p>Convolutional neural networks use three basic ideas: local receptive fields, shared weights, and pooling. A typical convolutional network is depicted in Fig. 2, where the network includes one input layer, one convolutional layer, one pooling layer and one output layer (fully connected). We will try to understand the three ideas using this network as an example.</p>
-<figure align="center">
-<img src="/figures/20160403/ConvN.png" alt="Convolutional Networks">
-<figcaption align="center">Fig. 2: The convolutional networks.</figcaption>
-</figure>
-
-<p><em>Local receptive fields</em>: Given a 28x28 image as the input layer, instead of directly connecting to all 28x28 pixels, the convolutional layer only connects to small, localized regions (local receptive fields) of the input image in the hope of detecting some localized features. In this example, the small region size is 5x5, so exploring all those regions with a stride length of one results into 24x24 neurons. Here we have three feature maps, so the convolutional layer eventually has 3x24x24 neurons.</p>
-<p><em>Shared weights and biases</em>: We use the same weights and bias for each neuron in a 24x24 feature map. It makes sense to use the same parameters in detecting the same feature but only in different local regions, and it can greatly reduce the number of parameters involved in a convolutional network compared to a fully connected layer.</p>
-<p><em>The pooling layer</em>: A pooling layer is usually used immediately after a convolutional layer. What the pooling layer do is simplify the information in the output from the convolutional layer. In this example, each unit in the pooling layer summarizes a region of 2x2 in the previous convolutional layer, which results into 3x12x12 neurons. The pooling can be a max-pooling (finding the maximum activation of the region to be summarized) or L2 pooling (obtaining the square root of the sum of the squares of the activations in the region to be summarized).</p>
-<p>To summarize, a convolutional network tries to detect localized features and at the same time greatly reduces the number of parameters. In principle, we could include any number of convolutional/pooling layers and also fully connected layers in our networks. What is exciting is that the backpropagation algorithm can apply to convolutional networks with only necessary minor modifications.</p>
-<p>Does convolutional networks avoid the vanishing/exploding gradient problem? Not really, but it helps us to proceed anyway, e.g., by reducing the number of parameters. The problem can be considerably alleviated by convolutional/pooling layers as well as other techniques, such as powerful regularization, advanced artificial neurons and more training epochs by GPU.</p>
-<h4>Deep Learning in Practice</h4>
-<p>It may be not that hard to construct a very basic (deep) NN and achieve a nice performance. However, there are still many techniques that could help to improve the NN's performance. A couple of insightful ideas are listed below, which should be kept in mind if we are working towards a better NN.</p>
+<p>There are two essential ideas that should be highlighted here:</p>
 <ul>
-<li>Use more convolutional/pooling layers: reduce the number of parameters and make learning faster;</li>
-<li>Use <a href="http://neuralnetworksanddeeplearning.com/chap3.html#the_cross-entropy_cost_function">right cost functions</a>: resolve the problem of learning slow down by the cross-entropy cost function;</li>
-<li>Use <a href="http://neuralnetworksanddeeplearning.com/chap3.html#overfitting_and_regularization">regularization</a>: combat overfitting by L2/L1/drop-out regularization;</li>
-<li>Use <a href="http://neuralnetworksanddeeplearning.com/chap3.html#other_models_of_artificial_neuron">advanced neurons</a>: for example, tanh neurons and rectified linear units;</li>
-<li>Use <a href="http://neuralnetworksanddeeplearning.com/chap3.html#weight_initialization">good weight initialization</a>: avoid neuron saturation and learn faster;</li>
-<li>Use an expanded training data set: for example, rotate/shift images as new training data in image classification;</li>
-<li>Use an ensemble of NNs: heavy computation, but more models beat one;</li>
-<li>Use GPU: gain more training epochs;</li>
+<li>The tree policy for child selection should be able to give the high-value nodes priorities in value approximation, and meanwhile explore the less-visited nodes. This is quite similar to the bandit problem, so we can apply the UCB policy to choose the child node.</li>
+<li>The value of each node is approximated in an incremental way. That is, its initial value is obtained from a random simulation by the default policy (e.g., a win/lose result along a random path), and then refined by the backpropagation steps during the following iterations.</li>
 </ul>
+<h4>The Full Algorithm Description</h4>
+<p>Before describing the algorithm, let us define some notations first.</p>
+<blockquote>
+<p><span class="math">\(s(v)\)</span>: the associated state to node <span class="math">\(v\)</span></p>
+<p><span class="math">\(a(v)\)</span>: the incoming action that leads to node <span class="math">\(v\)</span></p>
+<p><span class="math">\(N(v)\)</span>: the visit count of node <span class="math">\(v\)</span></p>
+<p><span class="math">\(Q(v)\)</span>: the vector of total simulation rewards of node <span class="math">\(v\)</span> for all players</p>
+</blockquote>
+<p>The main procedure of the MCTS algorithm is described below, which essentially executes the four fundamental steps for each iteration until the computational budget is reached. It returns the best action that should be taken for the current state.</p>
+<p><img src="/figures/20160409/Main.png" alt="Main"></p>
+<p>The selection step is described below, which returns the expandable node according to the tree policy.</p>
+<p><img src="/figures/20160409/TreePolicy.png" alt="TreePolicy"></p>
+<p>The child selection is described below, which returns the best child of a given node. It essentially applies the UCB method, which uses a constant <span class="math">\(c\)</span> to balance the exploitation with the exploration. It should be noted that there might be multiple players, but the best child is selected as per the interest of the player who is supposed to play in this state.</p>
+<p><img src="/figures/20160409/BestChild.png" alt="BestChild"></p>
+<p>The selected node after the selection step is expanded by choosing one of its unvisited children, and then adding the associated data to the new node. The procedure is described below.</p>
+<p><img src="/figures/20160409/Expand.png" alt="Expand"></p>
+<p>Given the state associating to the newly expanded node, a random simulation is run as indicated below, which finds a random path to a terminal state and returns the simulated reward.</p>
+<p><img src="/figures/20160409/DefaultPolicy.png" alt="DefaultPolicy"></p>
+<p>Once the simulated reward of the newly expanded node is obtained, it is backpropagated through the selected nodes in the selection step. The visit counts are updated at the same time.</p>
+<p><img src="/figures/20160409/Backup.png" alt="Backup"></p>
+<p>Recall the board game example, assume that the rewards of winning and losing a game are 1 and 0, respectively. After applying the MCTS algorithm, for each node <span class="math">\(v\)</span> in the tree, <span class="math">\(Q(v)\)</span> would be the number of wins that is accumulated from <span class="math">\(N(v)\)</span> visits of this node, and thus <span class="math">\(\frac{Q(v)}{N(v)}\)</span> would be the winning rate. This is exactly the information we could rely on to choose the best action to take in the current state.</p>
+<h3>How is MCTS used by Google's AlphaGo?<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup></h3>
+<p>We now understand how MCTS works. Can MCTS be directly applied to computer Go? Not really. The reason is that Go is a very high-branching game. Consider the number of all possible sequences of moves, <span class="math">\(b^d\)</span>, where <span class="math">\(b\)</span> is the game's breadth (number of legal moves per state, <span class="math">\(b \approx 250\)</span> for Go), and <span class="math">\(d\)</span> is game's depth (game length, <span class="math">\(d \approx 150\)</span> for Go). Exhaustive search is computationally impossible, and directly applying MCTS to Go helps little, since the limited number of simulations could only scratch the surface of the giant search space.</p>
+<p>Aided by the useful information learned by two deep convolutional neural networks (a.k.a., <a href="https://stlong0521.github.io/20160403%20-%20NN%20and%20DL.html">deep learning</a>), policy network and value network, Google's AlphaGo applies MCTS in an innovative way. </p>
+<ul>
+<li>First, for the tree policy to select child, instead of using the UCB method, AlphaGo takes into account the prior probability of actions learned by the policy network. More specifically, for node <span class="math">\(v_0\)</span>, the child <span class="math">\(v\)</span> is selected by maximizing
+<div class="math">\begin{equation}
+\frac{Q(v)}{N(v)}+\frac{P(v|v_0)}{1+N(v)},
+\end{equation}</div>
+where <span class="math">\(P(v|v_0)\)</span> is the prior probability that is provided by the policy network. This greatly improves the child selection policy, and thus grants more professional moves (e.g., by human experts) priorities in MCTS simulation.</li>
+<li>Second, for the default policy to evaluate expanded nodes, AlphaGo combines the outcomes from simulation steps and node values learned by the value network, and their weights are balanced by a constant <span class="math">\(\lambda\)</span>.</li>
+</ul>
+<p>Note that both the policy network and value network are trained offline, which greatly reduces the time cost in a real-time contest.</p>
 <h3>Acknowledgement</h3>
-<p>A large majority of this post comes from Michael Nielsen's book<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup> entitled "neural networks and deep learning", which I would strongly recommend to anyone interested in discovering how essentially neural networks work.</p>
+<p>A large majority of this post, including Fig. 1 and the pseudo codes, comes from the survey paper<sup id="fnref:2"><a class="footnote-ref" href="#fn:2" rel="footnote">2</a></sup>. More details about MCTS and its variants can be found there.</p>
 <h3>References</h3>
 <div class="footnote">
 <hr />
 <ol>
 <li id="fn:1">
-<p>M. Nielsen, <em><a href="http://neuralnetworksanddeeplearning.com/">Neural Networks and Deep Learning</a></em>, Determination Press, 2015.&#160;<a class="footnote-backref" href="#fnref:1" rev="footnote" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+<p>D. Silver, et al., <em><a href="http://www.nature.com/nature/journal/v529/n7587/full/nature16961.html">Mastering the game of Go with deep neural networks and tree search</a></em>, Nature, 2016.&#160;<a class="footnote-backref" href="#fnref:1" rev="footnote" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:2">
+<p>C. Browne, et al., <em><a href="http://www.cameronius.com/cv/mcts-survey-master.pdf">A Survey of Monte Carlo Tree Search Methods</a></em>, IEEE Transactions on Computational Intelligence and AI in Gamges, 2012.&#160;<a class="footnote-backref" href="#fnref:2" rev="footnote" title="Jump back to footnote 2 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
@@ -270,6 +212,25 @@ where <span class="math">\(\nabla_{a^L}C=\{\frac{\partial{C}}{\partial{a_j^L}}\}
     </div> -->
 
     <div class='article'>
+        <a href="https://stlong0521.github.io/201604039 - MCTS.html"><h2>Monte Carlo Tree Search and Its Application in AlphaGo</h2></a>
+        <div class= "well small"> Sat 09 Apr 2016
+
+by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
+ 
+
+
+ 
+    Tags <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  </div>
+        <div class="summary"><p>As one of the most important methods in artificial intelligence (AI), especially for playing games, Monte Carlo tree search (MCTS) has received considerable interest due to its spectacular success in the difficult problem of computer Go. In fact, most successful computer Go algorithms are powered by MCTS, including the recent ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/201604039 - MCTS.html">read more</a></div>
+    </div>
+	
+
+ 
+        
+
+ 
+
+    <div class='article'>
         <a href="https://stlong0521.github.io/20160403 - NN and DL.html"><h2>Neural Networks and Deep Learning</h2></a>
         <div class= "well small"> Sun 03 Apr 2016
 
@@ -280,8 +241,8 @@ by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.htm
  
     Tags <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a> <a href="https://stlong0521.github.io/tag/data-mining.html">Data Mining</a>  </div>
         <div class="summary"><p>It has been a long time since the idea of neural networks was proposed, but it is really during the last few years that neural networks have become widely used. One of the major enablers is the infrastructure with high computational capability (e.g., cloud computing), which makes the training ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20160403 - NN and DL.html">read more</a></div>
-    </div>
-	
+    </div>	
+				
 
  
         
