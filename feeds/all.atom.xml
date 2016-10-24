@@ -1,5 +1,255 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Tianlong's Blog</title><link href="https://stlong0521.github.io/" rel="alternate"></link><link href="https://stlong0521.github.io/feeds/all.atom.xml" rel="self"></link><id>https://stlong0521.github.io/</id><updated>2016-04-09T00:00:00-04:00</updated><entry><title>Monte Carlo Tree Search and Its Application in AlphaGo</title><link href="https://stlong0521.github.io/201604039%20-%20MCTS.html" rel="alternate"></link><updated>2016-04-09T00:00:00-04:00</updated><author><name>Tianlong Song</name></author><id>tag:stlong0521.github.io,2016-04-09:201604039 - MCTS.html</id><summary type="html">&lt;p&gt;As one of the most important methods in artificial intelligence (AI), especially for playing games, Monte Carlo tree search (MCTS) has received considerable interest due to its spectacular success in the difficult problem of computer Go. In fact, most successful computer Go algorithms are powered by MCTS, including the recent success of Google's AlphaGo&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt;. This post introduces MCTS and explains how it is used in AlphaGo.&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Tianlong's Blog</title><link href="https://stlong0521.github.io/" rel="alternate"></link><link href="https://stlong0521.github.io/feeds/all.atom.xml" rel="self"></link><id>https://stlong0521.github.io/</id><updated>2016-10-23T00:00:00-04:00</updated><entry><title>A Guide On How To Build An Airflow Server/Cluster</title><link href="https://stlong0521.github.io/20161023%20-%20Airflow.html" rel="alternate"></link><updated>2016-10-23T00:00:00-04:00</updated><author><name>Tianlong Song</name></author><id>tag:stlong0521.github.io,2016-10-23:20161023 - Airflow.html</id><summary type="html">&lt;p&gt;&lt;a href="https://github.com/apache/incubator-airflow"&gt;Airflow&lt;/a&gt; is an open-source platform to author, schedule and monitor workflows and data pipelines. When you have periodical jobs, which most likely involve various data transfer and/or show dependencies on each other, you should consider Airflow. This blog post briefly introduces Airflow, and provides the instructions to build an Airflow server/cluster from scratch.&lt;/p&gt;
+&lt;h3&gt;A Glimpse at Airflow under the Hood&lt;/h3&gt;
+&lt;p&gt;A complete and robust production-level Airflow infrastructure works under the server-worker settings, as you can see in the diagram below. The airflow server schedules jobs according to the dependencies defined in directed acrylic graphs (DAGs), and the airflow workers pick up and run jobs with their loads properly balanced. All job information is stored in the meta DB, which is updated in a timely manner. The users can monitor their jobs via a shiny Airflow web UI or the logs.&lt;/p&gt;
+&lt;figure align="center"&gt;
+&lt;img src="/figures/20161023/Airflow.png" alt="Airflow"&gt;
+&lt;figcaption align="center"&gt;Fig. 1: Airflow Diagram.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Although you do not necessarily need to run a fully distributed version of Airflow, this page will go through all three modes: standalone, pseudo-distributed and distributed modes.&lt;/p&gt;
+&lt;h3&gt;Phase 1: Start with Standalone Mode Using Sequential Executor&lt;/h3&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Under the standalone mode with a sequential executor, the executor picks up and runs jobs sequentially, which means there is no parallelism for this choice. Although not often used in production, it enables you to get familiar with Airflow quickly.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Install and configure airflow&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;# Set the airflow home
+export AIRFLOW_HOME=~/airflow
+
+# Install from pypi using pip
+pip install airflow
+
+# Install necessary sub-packages
+pip install airflow[crypto] # For connection credentials protection
+pip install airflow[postgres] # For PostgreSQL DBs
+pip install airflow[celery] # For distributed mode: celery executor
+pip install airflow[rabbitmq] # For message queuing and passing between airflow server and workers
+... # Anything more you need
+
+# Configure airflow: modify AIRFLOW_HOME/airflow.cfg if necessary
+# For the standalone mode, we will leave the configuration to default
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Initialize the meta database (home for almost all airflow information)&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;# For the standalone mode, it could be a sqlite database, which applies to sequential executor only
+airflow initdb
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Start the airflow webserver and explore the web UI&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;airflow webserver -p 8080 # Test it out by opening a web browser and go to localhost:8080
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Create your dags and place them into your DAGS_FOLDER (AIRFLOW_HOME/dags by default); refer to this &lt;a href="https://pythonhosted.org/airflow/tutorial.html"&gt;tutorial&lt;/a&gt; for how to create a dag, and keep the key commands below in mind&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;# Check syntax errors for your dag
+python ~/airflow/dags/tutorial.py
+
+# Print the list of active DAGs
+airflow list_dags
+
+# Print the list of tasks the &amp;quot;tutorial&amp;quot; dag_id
+airflow list_tasks tutorial
+
+# Print the hierarchy of tasks in the tutorial DAG
+airflow list_tasks tutorial --tree
+
+# Test your tasks in your dag
+airflow test [DAG_ID] [TASK_ID] [EXECUTION_DATE]
+airflow test tutorial sleep 2015-06-01
+
+# Backfill: execute jobs that are not done in the past
+airflow backfill tutorial -s 2015-06-01 -e 2015-06-07
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Start the airflow scheduler and monitor the tasks via the web UI&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;airflow scheduler # Monitor the your tasks via the web UI (success/failure/scheduling, etc.)
+
+# Remember to turn on the dags you want to run via the web UI, if they are not on yet
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;[Optional] Put your dags in remote storage, and sync them with your local dag folder&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;# Create a daemon using crons to sync up dags; below is an example for remote dags in S3 (you can also put them in remote repo)
+# Note: you need to have the aws command line tool installed and your AWS credentials properly configured
+crontab -e
+* * * * * /usr/local/bin/aws s3 sync s3://your_bucket/your_prefix YOUR_AIRFLOW_HOME/dags # Sync up every minute
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;[Optional] Add access control to the web UI; add users with password protection, see &lt;a href="https://pythonhosted.org/airflow/security.html"&gt;here&lt;/a&gt;. You may need to install the dependency below&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;pip install flask-bcrypt
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;Phase 2: Adopt Pseudo-distributed Mode Using Local Executor&lt;/h3&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Under the pseudo-distributed mode with a local executor, the local workers pick up and run jobs locally via multiprocessing. If you have only a moderate amount of scheduled jobs, this could be the right choice.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Adopt another DB server to support executors other than the sequential executor; MySQL and PostgreSQL are recommended; here PostgreSQL is used as an example&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;# Install postgres
+brew install postgresql # For Mac, the command varies for different OS
+
+# Connect to the database
+psql -d postgres # This will open a prompt
+
+# Operate on the database server
+\l # List all databases
+\du # List all users/roles
+\dt # Show all tables in database
+\h # List help information
+\q # Quit the prompt
+
+# Create a meta db for airflow
+CREATE DATABASE database_name;
+\l # Check for success
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Modify the configuration in AIRFLOW_HOME/airflow.cfg&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;# Change the executor to Local Executor
+executor = LocalExecutor
+
+# Change the meta db configuration
+# Note: the postgres username and password do not matter for now, since the database server and clients are still on the same host
+sql_alchemy_conn = postgresql+psycopg2://your_postgres_user_name:your_postgres_password@host_name/database_name
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Restart airflow to test your dags&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;airflow initdb
+airflow webserver
+airflow scheduler
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Establish your own connections via the web UI; you can test your DB connections via the Ad Hoc Query (see &lt;a href="https://pythonhosted.org/airflow/profiling.html"&gt;here&lt;/a&gt;)&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c"&gt;# Go to the web UI: Admin -&amp;gt; Connection -&amp;gt; Create&lt;/span&gt;
+&lt;span class="n"&gt;Connection&lt;/span&gt; &lt;span class="n"&gt;ID&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt; &lt;span class="n"&gt;it&lt;/span&gt;
+&lt;span class="n"&gt;Connection&lt;/span&gt; &lt;span class="n"&gt;Type&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;g&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;database&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;AWS&lt;/span&gt;
+&lt;span class="n"&gt;Host&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;g&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;your&lt;/span&gt; &lt;span class="n"&gt;database&lt;/span&gt; &lt;span class="n"&gt;server&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt;
+&lt;span class="n"&gt;Scheme&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;g&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;your&lt;/span&gt; &lt;span class="n"&gt;database&lt;/span&gt;
+&lt;span class="n"&gt;Username&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;your&lt;/span&gt; &lt;span class="n"&gt;user&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;
+&lt;span class="n"&gt;Password&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;will&lt;/span&gt; &lt;span class="n"&gt;be&lt;/span&gt; &lt;span class="n"&gt;encrypted&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;airflow&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;crypto&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="ow"&gt;is&lt;/span&gt; &lt;span class="n"&gt;installed&lt;/span&gt;
+&lt;span class="n"&gt;Extra&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;additional&lt;/span&gt; &lt;span class="n"&gt;configuration&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;JSON&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;g&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;AWS&lt;/span&gt; &lt;span class="n"&gt;credentials&lt;/span&gt;
+
+&lt;span class="c"&gt;# Encrypt your credentials&lt;/span&gt;
+&lt;span class="c"&gt;# Generate a valid Fernet key and place it into airflow.cfg&lt;/span&gt;
+&lt;span class="n"&gt;FERNET_KEY&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="err"&gt;$&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;python&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;c&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print FERNET_KEY&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;Phase 3: Extend to Distributed Mode Using Celery Executor&lt;/h3&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Under the distributed mode with a celery executor, remote workers pick up and run jobs as scheduled and load-balanced. As being highly scalable, it is the choice when you expect heavy and expanding loads.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Install and configure the message queuing/passing engine on the airflow server: RabbitMQ/Reddis/etc; RabbitMQ (resources: &lt;a href="http://docs.celeryproject.org/en/latest/getting-started/brokers/rabbitmq.html"&gt;link1&lt;/a&gt; and &lt;a href="http://blog.genesino.com/2016/05/airflow/"&gt;link2&lt;/a&gt;)&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="x"&gt; Install RabbitMQ&lt;/span&gt;
+&lt;span class="x"&gt;brew install rabbitmq &lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="x"&gt; For Mac, the command varies for different OS&lt;/span&gt;
+
+&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="x"&gt; Add the following path to your .bash_profile or .profile&lt;/span&gt;
+&lt;span class="x"&gt;PATH=&lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;PATH&lt;/span&gt;&lt;span class="x"&gt;:/usr/local/sbin&lt;/span&gt;
+
+&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="x"&gt; Start the RabbitMQ server&lt;/span&gt;
+&lt;span class="x"&gt;sudo rabbitmq-server &lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="x"&gt; run in foreground; or&lt;/span&gt;
+&lt;span class="x"&gt;sudo rabbitmq-server -detached &lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="x"&gt; run in background&lt;/span&gt;
+
+&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="x"&gt; Configure RabbitMQ: create user and grant privileges&lt;/span&gt;
+&lt;span class="x"&gt;rabbitmqctl add_user rabbitmq_user_name rabbitmq_password&lt;/span&gt;
+&lt;span class="x"&gt;rabbitmqctl add_vhost rabbitmq_virtual_host_name&lt;/span&gt;
+&lt;span class="x"&gt;rabbitmqctl set_user_tags rabbitmq_user_name rabbitmq_tag_name&lt;/span&gt;
+&lt;span class="x"&gt;rabbitmqctl set_permissions -p rabbitmq_virtual_host_name rabbitmq_user_name &amp;quot;.*&amp;quot; &amp;quot;.*&amp;quot; &amp;quot;.*&amp;quot;&lt;/span&gt;
+
+&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="x"&gt; Make the RabbitMQ server open to remote connections&lt;/span&gt;
+&lt;span class="x"&gt;Go to /usr/local/etc/rabbitmq/rabbitmq-env.conf, and change NODE_IP_ADDRESS from 127.0.0.1 to 0.0.0.0 (development only, restrict access for prod)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Modify the configuration in AIRFLOW_HOME/airflow.cfg&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;# Change the executor to Celery Executor
+executor = CeleryExecutor
+
+# Set up the RabbitMQ broker url and celery result backend
+broker_url = amqp://rabbitmq_user_name:rabbitmq_password@host_name/rabbitmq_virtual_host_name # host_name=localhost on server
+celery_result_backend = same as above
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Open the meta DB (PostgreSQL) to remote connections&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;# Modify /usr/local/var/postgres/pg_hba.conf to add Client Authentication Record
+host    all         all         0.0.0.0/0          md5 # 0.0.0.0/0 stands for all ips; use CIDR address to restrict access; md5 for pwd authentication
+
+# Change the Listen Address in /usr/local/var/postgres/postgresql.conf
+listen_addresses = &amp;#39;*&amp;#39;
+
+# Create a user and grant privileges (run the commands below under superuser of postgres)
+CREATE USER your_postgres_user_name WITH ENCRYPTED PASSWORD &amp;#39;your_postgres_pwd&amp;#39;;
+GRANT ALL PRIVILEGES ON DATABASE your_database_name TO your_postgres_user_name;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO your_postgres_user_name;
+
+# Restart the PostgreSQL server and test it out
+brew services restart postgresql
+psql -U [postgres_user_name] -h [postgres_host_name] -d [postgres_database_name]
+
+# IMPORTANT: update your sql_alchemy_conn string in airflow.cfg
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Configure your airflow workers; follow most steps for the airflow server, except that they do not have PostgreSQL and RabbitMQ servers&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Test it out&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;# Start your airflow workers, on each worker, run:
+airflow worker # The prompt will show the worker is ready to pick up tasks if everything goes well
+
+# Start you airflow server
+airflow webserver
+airflow scheduler
+airflow worker # [Optional] Let your airflow server be a worker as well
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Your airflow workers should be now picking up and running jobs from the airflow server!&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;</summary><category term="Big Data"></category></entry><entry><title>Monte Carlo Tree Search and Its Application in AlphaGo</title><link href="https://stlong0521.github.io/20160409%20-%20MCTS.html" rel="alternate"></link><updated>2016-04-09T00:00:00-04:00</updated><author><name>Tianlong Song</name></author><id>tag:stlong0521.github.io,2016-04-09:20160409 - MCTS.html</id><summary type="html">&lt;p&gt;As one of the most important methods in artificial intelligence (AI), especially for playing games, Monte Carlo tree search (MCTS) has received considerable interest due to its spectacular success in the difficult problem of computer Go. In fact, most successful computer Go algorithms are powered by MCTS, including the recent success of Google's AlphaGo&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1" rel="footnote"&gt;1&lt;/a&gt;&lt;/sup&gt;. This post introduces MCTS and explains how it is used in AlphaGo.&lt;/p&gt;
 &lt;h3&gt;Warm Up: Bandit-Based Methods&lt;sup id="fnref:2"&gt;&lt;a class="footnote-ref" href="#fn:2" rel="footnote"&gt;2&lt;/a&gt;&lt;/sup&gt;&lt;/h3&gt;
 &lt;p&gt;&lt;em&gt;Bandit problems&lt;/em&gt; are a well-known class of sequential decision problems, in which one needs to choose among &lt;span class="math"&gt;\(K\)&lt;/span&gt; actions (e.g. the &lt;span class="math"&gt;\(K\)&lt;/span&gt; arms of a multi-armed bandit slot machine) in order to maximize the cumulative reward by consistently taking the optimal action. The choice of action is difficult as the underlying reward distributions are unknown, and potential rewards must be estimated based on past observations. This leads to the &lt;em&gt;exploitation-exploration dilemma&lt;/em&gt;: one needs to balance the exploitation of the action currently believed to be optimal with the exploration of other actions that currently appear suboptimal but may turn out to be superior in the long run.&lt;/p&gt;
 &lt;p&gt;The primary goal is to find a policy that can minimize the player's regret after &lt;span class="math"&gt;\(n\)&lt;/span&gt; plays, which is the difference between: (i) the best possible total reward if the player could at the beginning have the knowledge of the reward distributions that is actually learned afterwards; and (ii) the actual total reward from the &lt;span class="math"&gt;\(n\)&lt;/span&gt; finished plays. In other words, the regret is the expected loss due to not playing the best bandit. An upper confidence bound (UCB) policy has been proposed, which has an expected logarithmic growth of regret uniformly over the total number of plays &lt;span class="math"&gt;\(n\)&lt;/span&gt; without any prior knowledge regarding the reward distributions. According to the UCB policy, to minimize his regret, for the current play, the player should choose arm &lt;span class="math"&gt;\(j\)&lt;/span&gt; that maximizes:
