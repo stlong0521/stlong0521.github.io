@@ -69,7 +69,7 @@ by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.htm
 	
         <div><p><a href="https://github.com/apache/incubator-airflow">Airflow</a> is an open-source platform to author, schedule and monitor workflows and data pipelines. When you have periodical jobs, which most likely involve various data transfer and/or show dependencies on each other, you should consider Airflow. This blog post briefly introduces Airflow, and provides the instructions to build an Airflow server/cluster from scratch.</p>
 <h3>A Glimpse at Airflow under the Hood</h3>
-<p>A complete and robust production-level Airflow infrastructure works under the server-worker settings, as you can see in the diagram below. The airflow server schedules jobs according to the dependencies defined in directed acrylic graphs (DAGs), and the airflow workers pick up and run jobs with their loads properly balanced. All job information is stored in the meta DB, which is updated in a timely manner. The users can monitor their jobs via a shiny Airflow web UI or the logs.</p>
+<p>Generally, Airflow works in a distributed environment, as you can see in the diagram below. The airflow scheduler schedules jobs according to the dependencies defined in directed acrylic graphs (DAGs), and the airflow workers pick up and run jobs with their loads properly balanced. All job information is stored in the meta DB, which is updated in a timely manner. The users can monitor their jobs via a shiny Airflow web UI and/or the logs.</p>
 <figure align="center">
 <img src="/figures/20161023/Airflow.png" alt="Airflow">
 <figcaption align="center">Fig. 1: Airflow Diagram.</figcaption>
