@@ -62,8 +62,8 @@
 
 <!--     <div class='article'>
         <div class="content-title">
-            <a href="https://stlong0521.github.io/20161023 - Airflow.html"><h1>A Guide On How To Build An Airflow Server/Cluster</h1></a>
-Sun 23 Oct 2016
+            <a href="https://stlong0521.github.io/20170715 - Airflow in Corporate.html"><h1>An Approach Of Scaling Airflow To A Corporate Level</h1></a>
+Sat 15 Jul 2017
 
 by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
  
@@ -73,259 +73,30 @@ by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.htm
     Tags <a href="https://stlong0521.github.io/tag/big-data.html">Big Data</a>  
         </div>
         
-        <div><p><a href="https://github.com/apache/incubator-airflow">Airflow</a> is an open-source platform to author, schedule and monitor workflows and data pipelines. When you have periodical jobs, which most likely involve various data transfer and/or show dependencies on each other, you should consider Airflow. This blog post briefly introduces Airflow, and provides the instructions to build an Airflow server/cluster from scratch.</p>
-<h3>A Glimpse at Airflow under the Hood</h3>
-<p>Generally, Airflow works in a distributed environment, as you can see in the diagram below. The airflow scheduler schedules jobs according to the dependencies defined in directed acrylic graphs (DAGs), and the airflow workers pick up and run jobs with their loads properly balanced. All job information is stored in the meta DB, which is updated in a timely manner. The users can monitor their jobs via a shiny Airflow web UI and/or the logs.</p>
-<figure align="center">
-<img src="/figures/20161023/Airflow.png" alt="Airflow">
-<figcaption align="center">Fig. 1: Airflow Diagram.</figcaption>
-</figure>
-
-<p>Although you do not necessarily need to run a fully distributed version of Airflow, this page will go through all three modes: standalone, pseudo-distributed and distributed modes.</p>
-<h3>Phase 1: Start with Standalone Mode Using Sequential Executor</h3>
-<blockquote>
-<p>Under the standalone mode with a sequential executor, the executor picks up and runs jobs sequentially, which means there is no parallelism for this choice. Although not often used in production, it enables you to get familiar with Airflow quickly.</p>
-</blockquote>
-<ol>
-<li>
-<p>Install and configure airflow</p>
-<div class="highlight"><pre># Set the airflow home
-export AIRFLOW_HOME=~/airflow
-
-# Install from pypi using pip
-pip install airflow
-
-# Install necessary sub-packages
-pip install airflow[crypto] # For connection credentials protection
-pip install airflow[postgres] # For PostgreSQL DBs
-pip install airflow[celery] # For distributed mode: celery executor
-pip install airflow[rabbitmq] # For message queuing and passing between airflow server and workers
-... # Anything more you need
-
-# Configure airflow: modify AIRFLOW_HOME/airflow.cfg if necessary
-# For the standalone mode, we will leave the configuration to default
-</pre></div>
-
-
-</li>
-<li>
-<p>Initialize the meta database (home for almost all airflow information)</p>
-<div class="highlight"><pre># For the standalone mode, it could be a sqlite database, which applies to sequential executor only
-airflow initdb
-</pre></div>
-
-
-</li>
-<li>
-<p>Start the airflow webserver and explore the web UI</p>
-<div class="highlight"><pre>airflow webserver -p 8080 # Test it out by opening a web browser and go to localhost:8080
-</pre></div>
-
-
-</li>
-<li>
-<p>Create your dags and place them into your DAGS_FOLDER (AIRFLOW_HOME/dags by default); refer to this <a href="https://pythonhosted.org/airflow/tutorial.html">tutorial</a> for how to create a dag, and keep the key commands below in mind</p>
-<div class="highlight"><pre># Check syntax errors for your dag
-python ~/airflow/dags/tutorial.py
-
-# Print the list of active DAGs
-airflow list_dags
-
-# Print the list of tasks the &quot;tutorial&quot; dag_id
-airflow list_tasks tutorial
-
-# Print the hierarchy of tasks in the tutorial DAG
-airflow list_tasks tutorial --tree
-
-# Test your tasks in your dag
-airflow test [DAG_ID] [TASK_ID] [EXECUTION_DATE]
-airflow test tutorial sleep 2015-06-01
-
-# Backfill: execute jobs that are not done in the past
-airflow backfill tutorial -s 2015-06-01 -e 2015-06-07
-</pre></div>
-
-
-</li>
-<li>
-<p>Start the airflow scheduler and monitor the tasks via the web UI</p>
-<div class="highlight"><pre>airflow scheduler # Monitor the your tasks via the web UI (success/failure/scheduling, etc.)
-
-# Remember to turn on the dags you want to run via the web UI, if they are not on yet
-</pre></div>
-
-
-</li>
-<li>
-<p>[Optional] Put your dags in remote storage, and sync them with your local dag folder</p>
-<div class="highlight"><pre># Create a daemon using crons to sync up dags; below is an example for remote dags in S3 (you can also put them in remote repo)
-# Note: you need to have the aws command line tool installed and your AWS credentials properly configured
-crontab -e
-* * * * * /usr/local/bin/aws s3 sync s3://your_bucket/your_prefix YOUR_AIRFLOW_HOME/dags # Sync up every minute
-</pre></div>
-
-
-</li>
-<li>
-<p>[Optional] Add access control to the web UI; add users with password protection, see <a href="https://pythonhosted.org/airflow/security.html">here</a>. You may need to install the dependency below</p>
-<div class="highlight"><pre>pip install flask-bcrypt
-</pre></div>
-
-
-</li>
-</ol>
-<h3>Phase 2: Adopt Pseudo-distributed Mode Using Local Executor</h3>
-<blockquote>
-<p>Under the pseudo-distributed mode with a local executor, the local workers pick up and run jobs locally via multiprocessing. If you have only a moderate amount of scheduled jobs, this could be the right choice.</p>
-</blockquote>
-<ol>
-<li>
-<p>Adopt another DB server to support executors other than the sequential executor; MySQL and PostgreSQL are recommended; here PostgreSQL is used as an example</p>
-<div class="highlight"><pre># Install postgres
-brew install postgresql # For Mac, the command varies for different OS
-
-# Connect to the database
-psql -d postgres # This will open a prompt
-
-# Operate on the database server
-\l # List all databases
-\du # List all users/roles
-\dt # Show all tables in database
-\h # List help information
-\q # Quit the prompt
-
-# Create a meta db for airflow
-CREATE DATABASE database_name;
-\l # Check for success
-</pre></div>
-
-
-</li>
-<li>
-<p>Modify the configuration in AIRFLOW_HOME/airflow.cfg</p>
-<div class="highlight"><pre># Change the executor to Local Executor
-executor = LocalExecutor
-
-# Change the meta db configuration
-# Note: the postgres username and password do not matter for now, since the database server and clients are still on the same host
-sql_alchemy_conn = postgresql+psycopg2://your_postgres_user_name:your_postgres_password@host_name/database_name
-</pre></div>
-
-
-</li>
-<li>
-<p>Restart airflow to test your dags</p>
-<div class="highlight"><pre>airflow initdb
-airflow webserver
-airflow scheduler
-</pre></div>
-
-
-</li>
-<li>
-<p>Establish your own connections via the web UI; you can test your DB connections via the Ad Hoc Query (see <a href="https://pythonhosted.org/airflow/profiling.html">here</a>)</p>
-<div class="highlight"><pre><span class="c"># Go to the web UI: Admin -&gt; Connection -&gt; Create</span>
-<span class="n">Connection</span> <span class="n">ID</span><span class="p">:</span> <span class="n">name</span> <span class="n">it</span>
-<span class="n">Connection</span> <span class="n">Type</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="p">,</span> <span class="n">database</span><span class="o">/</span><span class="n">AWS</span>
-<span class="n">Host</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="p">,</span> <span class="n">your</span> <span class="n">database</span> <span class="n">server</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">address</span>
-<span class="n">Scheme</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="p">,</span> <span class="n">your</span> <span class="n">database</span>
-<span class="n">Username</span><span class="p">:</span> <span class="n">your</span> <span class="n">user</span> <span class="n">name</span>
-<span class="n">Password</span><span class="p">:</span> <span class="n">will</span> <span class="n">be</span> <span class="n">encrypted</span> <span class="k">if</span> <span class="n">airflow</span><span class="p">[</span><span class="n">crypto</span><span class="p">]</span> <span class="ow">is</span> <span class="n">installed</span>
-<span class="n">Extra</span><span class="p">:</span> <span class="n">additional</span> <span class="n">configuration</span> <span class="ow">in</span> <span class="n">JSON</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="p">,</span> <span class="n">AWS</span> <span class="n">credentials</span>
-
-<span class="c"># Encrypt your credentials</span>
-<span class="c"># Generate a valid Fernet key and place it into airflow.cfg</span>
-<span class="n">FERNET_KEY</span><span class="o">=</span><span class="err">$</span><span class="p">(</span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s">&quot;from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print FERNET_KEY&quot;</span><span class="p">)</span>
-</pre></div>
-
-
-</li>
-</ol>
-<h3>Phase 3: Extend to Distributed Mode Using Celery Executor</h3>
-<blockquote>
-<p>Under the distributed mode with a celery executor, remote workers pick up and run jobs as scheduled and load-balanced. As being highly scalable, it is the choice when you expect heavy and expanding loads.</p>
-</blockquote>
-<ol>
-<li>
-<p>Install and configure the message queuing/passing engine on the airflow server: RabbitMQ/Reddis/etc; RabbitMQ (resources: <a href="http://docs.celeryproject.org/en/latest/getting-started/brokers/rabbitmq.html">link1</a> and <a href="http://blog.genesino.com/2016/05/airflow/">link2</a>)</p>
-<div class="highlight"><pre><span class="err">#</span><span class="x"> Install RabbitMQ</span>
-<span class="x">brew install rabbitmq </span><span class="err">#</span><span class="x"> For Mac, the command varies for different OS</span>
-
-<span class="err">#</span><span class="x"> Add the following path to your .bash_profile or .profile</span>
-<span class="x">PATH=</span><span class="p">$</span><span class="nv">PATH</span><span class="x">:/usr/local/sbin</span>
-
-<span class="err">#</span><span class="x"> Start the RabbitMQ server</span>
-<span class="x">sudo rabbitmq-server </span><span class="err">#</span><span class="x"> run in foreground; or</span>
-<span class="x">sudo rabbitmq-server -detached </span><span class="err">#</span><span class="x"> run in background</span>
-
-<span class="err">#</span><span class="x"> Configure RabbitMQ: create user and grant privileges</span>
-<span class="x">rabbitmqctl add_user rabbitmq_user_name rabbitmq_password</span>
-<span class="x">rabbitmqctl add_vhost rabbitmq_virtual_host_name</span>
-<span class="x">rabbitmqctl set_user_tags rabbitmq_user_name rabbitmq_tag_name</span>
-<span class="x">rabbitmqctl set_permissions -p rabbitmq_virtual_host_name rabbitmq_user_name &quot;.*&quot; &quot;.*&quot; &quot;.*&quot;</span>
-
-<span class="err">#</span><span class="x"> Make the RabbitMQ server open to remote connections</span>
-<span class="x">Go to /usr/local/etc/rabbitmq/rabbitmq-env.conf, and change NODE_IP_ADDRESS from 127.0.0.1 to 0.0.0.0 (development only, restrict access for prod)</span>
-</pre></div>
-
-
-</li>
-<li>
-<p>Modify the configuration in AIRFLOW_HOME/airflow.cfg</p>
-<div class="highlight"><pre># Change the executor to Celery Executor
-executor = CeleryExecutor
-
-# Set up the RabbitMQ broker url and celery result backend
-broker_url = amqp://rabbitmq_user_name:rabbitmq_password@host_name/rabbitmq_virtual_host_name # host_name=localhost on server
-celery_result_backend = same as above
-</pre></div>
-
-
-</li>
-<li>
-<p>Open the meta DB (PostgreSQL) to remote connections</p>
-<div class="highlight"><pre># Modify /usr/local/var/postgres/pg_hba.conf to add Client Authentication Record
-host    all         all         0.0.0.0/0          md5 # 0.0.0.0/0 stands for all ips; use CIDR address to restrict access; md5 for pwd authentication
-
-# Change the Listen Address in /usr/local/var/postgres/postgresql.conf
-listen_addresses = &#39;*&#39;
-
-# Create a user and grant privileges (run the commands below under superuser of postgres)
-CREATE USER your_postgres_user_name WITH ENCRYPTED PASSWORD &#39;your_postgres_pwd&#39;;
-GRANT ALL PRIVILEGES ON DATABASE your_database_name TO your_postgres_user_name;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO your_postgres_user_name;
-
-# Restart the PostgreSQL server and test it out
-brew services restart postgresql
-psql -U [postgres_user_name] -h [postgres_host_name] -d [postgres_database_name]
-
-# IMPORTANT: update your sql_alchemy_conn string in airflow.cfg
-</pre></div>
-
-
-</li>
-<li>
-<p>Configure your airflow workers; follow most steps for the airflow server, except that they do not have PostgreSQL and RabbitMQ servers</p>
-</li>
-<li>
-<p>Test it out</p>
-<div class="highlight"><pre># Start your airflow workers, on each worker, run:
-airflow worker # The prompt will show the worker is ready to pick up tasks if everything goes well
-
-# Start you airflow server
-airflow webserver
-airflow scheduler
-airflow worker # [Optional] Let your airflow server be a worker as well
-</pre></div>
-
-
-</li>
-<li>
-<p>Your airflow workers should be now picking up and running jobs from the airflow server!</p>
-</li>
-</ol></div>
+        <div><p><a href="https://stlong0521.github.io/20161023%20-%20Airflow.html">The last post on Airflow</a> provides step-by-step instructions on how to build an Airflow cluster from scratch. It could serve the development purpose well, but lacks critical features to work in prod, e.g., CI/CD compliance, resource monitoring, service recovery, and so on.</p>
+<p>I have been leading the efforts to build the Airflow backbone at Zillow's Data Science and Engineering (DSE) team, and I would like to introduce <a href="https://www.zillow.com/data-science/airflow-at-zillow/">a post</a> from Zillow's tech blog site. It describes how Airflow is adopted and working at Zillow, and can possibly give you an idea on how Airflow can be configured to run in a corporate level.</p></div>
         <hr />
     </div> -->
+
+    <div class='article'>
+        <a href="https://stlong0521.github.io/20170715 - Airflow in Corporate.html"><h2>An Approach Of Scaling Airflow To A Corporate Level</h2></a>
+        <div class= "well small"> Sat 15 Jul 2017
+
+by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
+ 
+
+
+ 
+    Tags <a href="https://stlong0521.github.io/tag/big-data.html">Big Data</a>  </div>
+        <div class="summary"><p><a href="https://stlong0521.github.io/20161023%20-%20Airflow.html">The last post on Airflow</a> provides step-by-step instructions on how to build an Airflow cluster from scratch. It could serve the development purpose well, but lacks critical features to work in prod, e.g., CI/CD compliance, resource monitoring, service recovery, and so on.</p>
+<p>I have been leading the efforts ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20170715 - Airflow in Corporate.html">read more</a></div>
+    </div>
+	
+
+ 
+        
+
+ 
 
     <div class='article'>
         <a href="https://stlong0521.github.io/20161023 - Airflow.html"><h2>A Guide On How To Build An Airflow Server/Cluster</h2></a>
@@ -338,8 +109,8 @@ by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.htm
  
     Tags <a href="https://stlong0521.github.io/tag/big-data.html">Big Data</a>  </div>
         <div class="summary"><p><a href="https://github.com/apache/incubator-airflow">Airflow</a> is an open-source platform to author, schedule and monitor workflows and data pipelines. When you have periodical jobs, which most likely involve various data transfer and/or show dependencies on each other, you should consider Airflow. This blog post briefly introduces Airflow, and provides the instructions to build an ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20161023 - Airflow.html">read more</a></div>
-    </div>
-	
+    </div>	
+				
 
  
         
@@ -629,7 +400,7 @@ by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.htm
     </div>     </div> 
 <footer>
 <br />
-<p><a href="https://stlong0521.github.io">Tianlong's Blog</a> &copy; Tianlong Song 2016</p>
+<p><a href="https://stlong0521.github.io">Tianlong's Blog</a> &copy; Tianlong Song 2017</p>
 </footer>
 
 </div> <!-- /container -->
