@@ -62,21 +62,92 @@
 
 <!--     <div class='article'>
         <div class="content-title">
-            <a href="https://stlong0521.github.io/20170715 - Airflow in Corporate.html"><h1>An Approach Of Scaling Airflow To A Corporate Level</h1></a>
-Sat 15 Jul 2017
+            <a href="https://stlong0521.github.io/20171015 - Language Detection.html"><h1>Language Detection from Speech: Chinese or English?</h1></a>
+Sun 15 Oct 2017
 
 by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
  
 
 
  
-    Tags <a href="https://stlong0521.github.io/tag/big-data.html">Big Data</a>  
+    Tags <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a> <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a>  
         </div>
         
-        <div><p><a href="https://stlong0521.github.io/20161023%20-%20Airflow.html">The last post on Airflow</a> provides step-by-step instructions on how to build an Airflow cluster from scratch. It could serve the development purpose well, but lacks critical features to work in prod, e.g., CI/CD compliance, resource monitoring, service recovery, and so on.</p>
-<p>I have been leading the efforts to build the Airflow backbone at Zillow's Data Science and Engineering (DSE) team, and I would like to introduce <a href="https://www.zillow.com/data-science/airflow-at-zillow/">a post</a> from Zillow's tech blog site. It describes how Airflow is adopted and working at Zillow, and can possibly give you an idea on how Airflow can be configured to run in a corporate level.</p></div>
+        <div><p>In language processing, it is an essential step to detect which language it is before speech recognition and machine translation. This blog post presents an approach to distinguish Chinese and English from speech (an audio sample) using a neural network model. <a href="https://spark.apache.org/">Spark</a> is used to perform data preprocessing, and <a href="https://www.tensorflow.org/">TensorFlow</a> is used for neural network model training and evaluation.</p>
+<h3>Raw Data Collection</h3>
+<p>YouTube videos (with audio extracted) are downloaded and converted to wav format. The data are collected from two representative interview shows in each language (Chinese and English), and they are:</p>
+<ul>
+<li>635 minutes of Chinese interviews from <a href="https://www.youtube.com/watch?v=6GOTZa3xU2U&amp;list=PL0qv-SqUbwqVVIabi_90Me4UeuKWs1Sbn">Luyu Official</a> (i.e., 《鲁豫有约》)</li>
+<li>534 minutes of English interviews from <a href="https://www.youtube.com/watch?v=s0MbQWhyoD0&amp;list=PLuW4g7xujBWeiOJ-C-pZCTdUMWucxeMNQ">Ellen Show</a></li>
+</ul>
+<h3>Data Preprocessing</h3>
+<p>The data preprocessing converts a wav audio file into a spectrogram image by the following steps:</p>
+<ol>
+<li>Split audio into pieces of one second for each;</li>
+<li>Re-sample (down-sample) to make sure each audio piece has the same sampling rate (16k);</li>
+<li>Apply <a href="http://practicalcryptography.com/miscellaneous/machine-learning/guide-mel-frequency-cepstral-coefficients-mfccs/">Mel Frequency Cepstral Coefficient (MFCC) filter</a> to obtain the spectrogram of the audio;</li>
+<li>Convert the spectrogram into a gray-scale image;</li>
+<li>Improve the contrast of images by applying <a href="http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_histograms/py_histogram_equalization/py_histogram_equalization.html">histogram equalization</a> and <a href="https://helpx.adobe.com/photoshop/using/levels-adjustment.html">levels filter</a>;</li>
+<li>Cut or pad to make sure each image has the same size.</li>
+</ol>
+<p>To enable parallelization (via Map and Reduce), Spark is used to execute the steps described above. Most steps are easy to understand, while Step 3 needs a little bit more explanation here. The MFCC filter essentially mimics the functionality of human cochleae, by framing, calculating power spectrum and summing over different mel-spaced filter banks for each audio sample. See <a href="http://practicalcryptography.com/miscellaneous/machine-learning/guide-mel-frequency-cepstral-coefficients-mfccs/">here</a> for more details, especially how mel-spaced filter banks are generated.</p>
+<p>At last, all spectrogram images are labelled, mixed, shuffled and then split into train/test tests by 80%/20%. After that, we have:</p>
+<ul>
+<li>Train set: 30497 spectrogram images for Chinese, and 25663 spectrogram images for English</li>
+<li>Test set: 7625 spectrogram images for Chinese, and 6416 spectrogram images for English</li>
+</ul>
+<h3>Model Training and Evaluation</h3>
+<p>A Berlinnet neural network model is adopted from <a href="https://github.com/twerkmeister/iLID/blob/master/tensorflow/network/instances/berlinnet.py">here</a> to perform the classification. The model contains 12 layers (in the order they appear in the network):</p>
+<ul>
+<li>One input layer</li>
+<li>One convolutional layer</li>
+<li>One <a href="https://www.tensorflow.org/api_docs/python/tf/nn/local_response_normalization">local response normalization layer</a></li>
+<li>One pooling layer</li>
+<li>One convolutional layer</li>
+<li>One local response normalization layer</li>
+<li>One pooling layer</li>
+<li>One convolutional layer</li>
+<li>One local response normalization layer</li>
+<li>One pooling layer</li>
+<li>One fully connected layer</li>
+<li>One fully connected layer</li>
+<li>One output layer</li>
+</ul>
+<p>The model is trained and evaluated using the TensorFlow framework. The configuration of the training as well as the model itself can be found <a href="https://github.com/stlong0521/language-detector/blob/master/language_detector/modeling/config.yaml">here</a>, and the results are discussed in the next section.</p>
+<h3>Results &amp; Discussion</h3>
+<p>Due to limited resources on a regular PC (that is what I have), there was only 19300 iterations performed during the training step, which took around 24 hours. However, the evaluation on the test set delivered an accuracy of as high as 92.7%. It should be noted that the classification is merely based on a very short audio sample (lasting for one second only).</p>
+<p>There are at least three potential ways to make the accuracy even higher:</p>
+<ol>
+<li>Collect more data to train the model;</li>
+<li>Apply more iterations during training, if more resources are available;</li>
+<li>Most likely, an utterance lasts for more than one second, which gives us a chance to apply majority voting across the classification results drawn independently from multiple one-second audio pieces. A weighted voting is even better and meanwhile definitely doable, as each classification returns not only a label but also the confidence.</li>
+</ol>
+<p>The last approach turns out to be a very effective way to boost the classification accuracy, which barely consumes any additional resource but can reduce the classification error dramatically.</p>
+<h3>Code Repository</h3>
+<p>Check out the <a href="https://github.com/stlong0521/language-detector">codes</a>, if you are interested in the implementation.</p>
+<h3>Acknowledgment</h3>
+<p>This project is inspired by and a large portion of codes comes from the great work <a href="https://github.com/twerkmeister/iLID">here</a>.</p></div>
         <hr />
     </div> -->
+
+    <div class='article'>
+        <a href="https://stlong0521.github.io/20171015 - Language Detection.html"><h2>Language Detection from Speech: Chinese or English?</h2></a>
+        <div class= "well small"> Sun 15 Oct 2017
+
+by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
+ 
+
+
+ 
+    Tags <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a> <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a>  </div>
+        <div class="summary"><p>In language processing, it is an essential step to detect which language it is before speech recognition and machine translation. This blog post presents an approach to distinguish Chinese and English from speech (an audio sample) using a neural network model. <a href="https://spark.apache.org/">Spark</a> is used to perform data preprocessing, and <a href="https://www.tensorflow.org/">TensorFlow ...</a></p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20171015 - Language Detection.html">read more</a></div>
+    </div>
+	
+
+ 
+        
+
+ 
 
     <div class='article'>
         <a href="https://stlong0521.github.io/20170715 - Airflow in Corporate.html"><h2>An Approach Of Scaling Airflow To A Corporate Level</h2></a>
@@ -90,8 +161,8 @@ by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.htm
     Tags <a href="https://stlong0521.github.io/tag/big-data.html">Big Data</a>  </div>
         <div class="summary"><p><a href="https://stlong0521.github.io/20161023%20-%20Airflow.html">The last post on Airflow</a> provides step-by-step instructions on how to build an Airflow cluster from scratch. It could serve the development purpose well, but lacks critical features to work in prod, e.g., CI/CD compliance, resource monitoring, service recovery, and so on.</p>
 <p>I have been leading the efforts ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20170715 - Airflow in Corporate.html">read more</a></div>
-    </div>
-	
+    </div>	
+				
 
  
         

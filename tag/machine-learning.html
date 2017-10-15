@@ -62,154 +62,92 @@
 
 <!--     <div class='article'>
         <div class="content-title">
-            <a href="https://stlong0521.github.io/20160409 - MCTS.html"><h1>Monte Carlo Tree Search and Its Application in AlphaGo</h1></a>
-Sat 09 Apr 2016
+            <a href="https://stlong0521.github.io/20171015 - Language Detection.html"><h1>Language Detection from Speech: Chinese or English?</h1></a>
+Sun 15 Oct 2017
 
 by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
  
 
 
  
-    Tags <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  
+    Tags <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a> <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a>  
         </div>
         
-        <div><p>As one of the most important methods in artificial intelligence (AI), especially for playing games, Monte Carlo tree search (MCTS) has received considerable interest due to its spectacular success in the difficult problem of computer Go. In fact, most successful computer Go algorithms are powered by MCTS, including the recent success of Google's AlphaGo<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup>. This post introduces MCTS and explains how it is used in AlphaGo.</p>
-<h3>Warm Up: Bandit-Based Methods<sup id="fnref:2"><a class="footnote-ref" href="#fn:2" rel="footnote">2</a></sup></h3>
-<p><em>Bandit problems</em> are a well-known class of sequential decision problems, in which one needs to choose among <span class="math">\(K\)</span> actions (e.g. the <span class="math">\(K\)</span> arms of a multi-armed bandit slot machine) in order to maximize the cumulative reward by consistently taking the optimal action. The choice of action is difficult as the underlying reward distributions are unknown, and potential rewards must be estimated based on past observations. This leads to the <em>exploitation-exploration dilemma</em>: one needs to balance the exploitation of the action currently believed to be optimal with the exploration of other actions that currently appear suboptimal but may turn out to be superior in the long run.</p>
-<p>The primary goal is to find a policy that can minimize the player's regret after <span class="math">\(n\)</span> plays, which is the difference between: (i) the best possible total reward if the player could at the beginning have the knowledge of the reward distributions that is actually learned afterwards; and (ii) the actual total reward from the <span class="math">\(n\)</span> finished plays. In other words, the regret is the expected loss due to not playing the best bandit. An upper confidence bound (UCB) policy has been proposed, which has an expected logarithmic growth of regret uniformly over the total number of plays <span class="math">\(n\)</span> without any prior knowledge regarding the reward distributions. According to the UCB policy, to minimize his regret, for the current play, the player should choose arm <span class="math">\(j\)</span> that maximizes:
-</p>
-<div class="math">\begin{equation}
-\overline{X}_j+\sqrt{\frac{2\ln{n}}{n_j}},
-\end{equation}</div>
-<p>
-where <span class="math">\(\overline{X}_j\)</span> is the average reward from arm <span class="math">\(j\)</span>, <span class="math">\(n_j\)</span> is the number of times arm <span class="math">\(j\)</span> was played and <span class="math">\(n\)</span> is the total number of plays so far. The physical meaning is that: the term <span class="math">\(\overline{X}_j\)</span> encourages the exploitation of higher-rewarded choices, while the term <span class="math">\(\sqrt{\frac{2\ln{n}}{n_j}}\)</span> encourages the exploration of less-visited choices.</p>
-<h3>Monte Carlo Tree Search (MCTS)<sup id="fnref:2"><a class="footnote-ref" href="#fn:2" rel="footnote">2</a></sup></h3>
-<p>Let us use the board game as an example. Given a board state, the primary goal would be finding out the best action that should be taken currently, which should naturally be chosen according to some precomputed value of each action. The purpose of MCTS is to approximate the (true) values of actions that may be taken from the current board state. This is achieved by iteratively building a partial search tree.</p>
-<h4>Four Fundamental Steps in Each Iteration</h4>
-<p>The basic algorithm involves iteratively building a search tree until some predefined computational budget (e.g., time, memory or iteration constraint) is reached, at which point the search is halted and the best-performing root action returned. Each node in the search tree represents a state, and directed links to child nodes represent actions leading to subsequent states.</p>
-<figure align="center">
-<img src="/figures/20160409/MCTS.png" alt="MCTS">
-<figcaption align="center">Fig. 1: Four steps in one iteration of MCTS.</figcaption>
-</figure>
-
-<p>As illustrate in Fig. 1, four steps are applied for each iteration<sup id="fnref:2"><a class="footnote-ref" href="#fn:2" rel="footnote">2</a></sup>:</p>
-<ol>
-<li>Selection: Starting from the root node (i.e., current state), a tree policy for child selection is recursively applied to descend through the tree until an expandable node is reached. A node is expandable if it represents a non-terminal state and has unvisited (i.e., expandable) children.</li>
-<li>Expansion: For the expandable node we reached in the selection step, one child node is added to expand the tree, according to the available actions.</li>
-<li>Simulation: A simulation is run from the newly expanded node according to the default policy to produce an outcome (e.g., win or lose when reaching a terminal state).</li>
-<li>Backpropagation: The simulated result is backpropagated through the selected nodes in the selection step to update their statistics.</li>
-</ol>
-<p>There are two essential ideas that should be highlighted here:</p>
+        <div><p>In language processing, it is an essential step to detect which language it is before speech recognition and machine translation. This blog post presents an approach to distinguish Chinese and English from speech (an audio sample) using a neural network model. <a href="https://spark.apache.org/">Spark</a> is used to perform data preprocessing, and <a href="https://www.tensorflow.org/">TensorFlow</a> is used for neural network model training and evaluation.</p>
+<h3>Raw Data Collection</h3>
+<p>YouTube videos (with audio extracted) are downloaded and converted to wav format. The data are collected from two representative interview shows in each language (Chinese and English), and they are:</p>
 <ul>
-<li>The tree policy for child selection should be able to give the high-value nodes priorities in value approximation, and meanwhile explore the less-visited nodes. This is quite similar to the bandit problem, so we can apply the UCB policy to choose the child node.</li>
-<li>The value of each node is approximated in an incremental way. That is, its initial value is obtained from a random simulation by the default policy (e.g., a win/lose result along a random path), and then refined by the backpropagation steps during the following iterations.</li>
+<li>635 minutes of Chinese interviews from <a href="https://www.youtube.com/watch?v=6GOTZa3xU2U&amp;list=PL0qv-SqUbwqVVIabi_90Me4UeuKWs1Sbn">Luyu Official</a> (i.e., 《鲁豫有约》)</li>
+<li>534 minutes of English interviews from <a href="https://www.youtube.com/watch?v=s0MbQWhyoD0&amp;list=PLuW4g7xujBWeiOJ-C-pZCTdUMWucxeMNQ">Ellen Show</a></li>
 </ul>
-<h4>The Full Algorithm Description</h4>
-<p>Before describing the algorithm, let us define some notations first.</p>
-<blockquote>
-<p><span class="math">\(s(v)\)</span>: the associated state to node <span class="math">\(v\)</span></p>
-<p><span class="math">\(a(v)\)</span>: the incoming action that leads to node <span class="math">\(v\)</span></p>
-<p><span class="math">\(N(v)\)</span>: the visit count of node <span class="math">\(v\)</span></p>
-<p><span class="math">\(Q(v)\)</span>: the vector of total simulation rewards of node <span class="math">\(v\)</span> for all players</p>
-</blockquote>
-<p>The main procedure of the MCTS algorithm is described below, which essentially executes the four fundamental steps for each iteration until the computational budget is reached. It returns the best action that should be taken for the current state.</p>
-<p><img src="/figures/20160409/Main.png" alt="Main"></p>
-<p>The selection step is described below, which returns the expandable node according to the tree policy.</p>
-<p><img src="/figures/20160409/TreePolicy.png" alt="TreePolicy"></p>
-<p>The child selection is described below, which returns the best child of a given node. It essentially applies the UCB method, which uses a constant <span class="math">\(c\)</span> to balance the exploitation with the exploration. It should be noted that there might be multiple players, but the best child is selected as per the interest of the player who is supposed to play in this state.</p>
-<p><img src="/figures/20160409/BestChild.png" alt="BestChild"></p>
-<p>The selected node after the selection step is expanded by choosing one of its unvisited children, and then adding the associated data to the new node. The procedure is described below.</p>
-<p><img src="/figures/20160409/Expand.png" alt="Expand"></p>
-<p>Given the state associating to the newly expanded node, a random simulation is run as indicated below, which finds a random path to a terminal state and returns the simulated reward.</p>
-<p><img src="/figures/20160409/DefaultPolicy.png" alt="DefaultPolicy"></p>
-<p>Once the simulated reward of the newly expanded node is obtained, it is backpropagated through the selected nodes in the selection step. The visit counts are updated at the same time.</p>
-<p><img src="/figures/20160409/Backup.png" alt="Backup"></p>
-<p>Recall the board game example, assume that the rewards of winning and losing a game are 1 and 0, respectively. After applying the MCTS algorithm, for each node <span class="math">\(v\)</span> in the tree, <span class="math">\(Q(v)\)</span> would be the number of wins that is accumulated from <span class="math">\(N(v)\)</span> visits of this node, and thus <span class="math">\(\frac{Q(v)}{N(v)}\)</span> would be the winning rate. This is exactly the information we could rely on to choose the best action to take in the current state.</p>
-<h3>How is MCTS used by Google's AlphaGo?<sup id="fnref:1"><a class="footnote-ref" href="#fn:1" rel="footnote">1</a></sup></h3>
-<p>We now understand how MCTS works. Can MCTS be directly applied to computer Go? Yes, but there could be a better way to do that. The reason is that Go is a very high-branching game. Consider the number of all possible sequences of moves, <span class="math">\(b^d\)</span>, where <span class="math">\(b\)</span> is the game's breadth (number of legal moves per state, <span class="math">\(b \approx 250\)</span> for Go), and <span class="math">\(d\)</span> is game's depth (game length, <span class="math">\(d \approx 150\)</span> for Go). As a result, exhaustive search is computationally impossible. Applying MCTS to Go in a straightforward way helps, but the benefits of MCTS are not really fully exploited, since the limited number of simulations could only scratch the surface of the giant search space.</p>
-<p>Aided by the useful information learned by two deep convolutional neural networks (a.k.a., <a href="https://stlong0521.github.io/20160403%20-%20NN%20and%20DL.html">deep learning</a>), policy network and value network, Google's AlphaGo applies MCTS in an innovative way. </p>
-<ul>
-<li>First, for the tree policy to select child, instead of using the UCB method, AlphaGo takes into account the prior probability of actions learned by the policy network. More specifically, for node <span class="math">\(v_0\)</span>, the child <span class="math">\(v\)</span> is selected by maximizing
-<div class="math">\begin{equation}
-\frac{Q(v)}{N(v)}+\frac{P(v|v_0)}{1+N(v)},
-\end{equation}</div>
-where <span class="math">\(P(v|v_0)\)</span> is the prior probability that is provided by the policy network. This greatly improves the child selection policy, and thus grants more professional moves (e.g., by human experts) priorities in MCTS simulation.</li>
-<li>Second, for the default policy to evaluate expanded nodes, AlphaGo combines the outcomes from simulation steps and node values learned by the value network, and their weights are balanced by a constant <span class="math">\(\lambda\)</span>.</li>
-</ul>
-<p>Note that both the policy network and value network are trained offline, which greatly reduces the time cost in a real-time contest.</p>
-<h3>Acknowledgement</h3>
-<p>A large majority of this post, including Fig. 1 and the pseudo codes, comes from the survey paper<sup id="fnref:2"><a class="footnote-ref" href="#fn:2" rel="footnote">2</a></sup>. More details about MCTS and its variants can be found there.</p>
-<h3>References</h3>
-<div class="footnote">
-<hr />
+<h3>Data Preprocessing</h3>
+<p>The data preprocessing converts a wav audio file into a spectrogram image by the following steps:</p>
 <ol>
-<li id="fn:1">
-<p>D. Silver, et al., <em><a href="http://www.nature.com/nature/journal/v529/n7587/full/nature16961.html">Mastering the game of Go with deep neural networks and tree search</a></em>, Nature, 2016.&#160;<a class="footnote-backref" href="#fnref:1" rev="footnote" title="Jump back to footnote 1 in the text">&#8617;</a></p>
-</li>
-<li id="fn:2">
-<p>C. Browne, et al., <em><a href="http://www.cameronius.com/cv/mcts-survey-master.pdf">A Survey of Monte Carlo Tree Search Methods</a></em>, IEEE Transactions on Computational Intelligence and AI in Gamges, 2012.&#160;<a class="footnote-backref" href="#fnref:2" rev="footnote" title="Jump back to footnote 2 in the text">&#8617;</a></p>
-</li>
+<li>Split audio into pieces of one second for each;</li>
+<li>Re-sample (down-sample) to make sure each audio piece has the same sampling rate (16k);</li>
+<li>Apply <a href="http://practicalcryptography.com/miscellaneous/machine-learning/guide-mel-frequency-cepstral-coefficients-mfccs/">Mel Frequency Cepstral Coefficient (MFCC) filter</a> to obtain the spectrogram of the audio;</li>
+<li>Convert the spectrogram into a gray-scale image;</li>
+<li>Improve the contrast of images by applying <a href="http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_histograms/py_histogram_equalization/py_histogram_equalization.html">histogram equalization</a> and <a href="https://helpx.adobe.com/photoshop/using/levels-adjustment.html">levels filter</a>;</li>
+<li>Cut or pad to make sure each image has the same size.</li>
 </ol>
-</div>
-<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
-    var align = "center",
-        indent = "0em",
-        linebreak = "false";
-
-    if (false) {
-        align = (screen.width < 768) ? "left" : align;
-        indent = (screen.width < 768) ? "0em" : indent;
-        linebreak = (screen.width < 768) ? 'true' : linebreak;
-    }
-
-    var mathjaxscript = document.createElement('script');
-    var location_protocol = (false) ? 'https' : document.location.protocol;
-    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
-    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
-    mathjaxscript.type = 'text/javascript';
-    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
-    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
-        "MathJax.Hub.Config({" +
-        "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' }, Macros: {} }," +
-        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
-        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
-        "    displayAlign: '"+ align +"'," +
-        "    displayIndent: '"+ indent +"'," +
-        "    showMathMenu: true," +
-        "    messageStyle: 'normal'," +
-        "    tex2jax: { " +
-        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
-        "        displayMath: [ ['$$','$$'] ]," +
-        "        processEscapes: true," +
-        "        preview: 'TeX'," +
-        "    }, " +
-        "    'HTML-CSS': { " +
-        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
-        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
-        "    }, " +
-        "}); " +
-        "if ('default' !== 'default') {" +
-            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
-                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
-                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
-                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
-                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
-                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
-            "});" +
-            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
-                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
-                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
-                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
-                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
-                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
-            "});" +
-        "}";
-    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
-}
-</script></div>
+<p>To enable parallelization (via Map and Reduce), Spark is used to execute the steps described above. Most steps are easy to understand, while Step 3 needs a little bit more explanation here. The MFCC filter essentially mimics the functionality of human cochleae, by framing, calculating power spectrum and summing over different mel-spaced filter banks for each audio sample. See <a href="http://practicalcryptography.com/miscellaneous/machine-learning/guide-mel-frequency-cepstral-coefficients-mfccs/">here</a> for more details, especially how mel-spaced filter banks are generated.</p>
+<p>At last, all spectrogram images are labelled, mixed, shuffled and then split into train/test tests by 80%/20%. After that, we have:</p>
+<ul>
+<li>Train set: 30497 spectrogram images for Chinese, and 25663 spectrogram images for English</li>
+<li>Test set: 7625 spectrogram images for Chinese, and 6416 spectrogram images for English</li>
+</ul>
+<h3>Model Training and Evaluation</h3>
+<p>A Berlinnet neural network model is adopted from <a href="https://github.com/twerkmeister/iLID/blob/master/tensorflow/network/instances/berlinnet.py">here</a> to perform the classification. The model contains 12 layers (in the order they appear in the network):</p>
+<ul>
+<li>One input layer</li>
+<li>One convolutional layer</li>
+<li>One <a href="https://www.tensorflow.org/api_docs/python/tf/nn/local_response_normalization">local response normalization layer</a></li>
+<li>One pooling layer</li>
+<li>One convolutional layer</li>
+<li>One local response normalization layer</li>
+<li>One pooling layer</li>
+<li>One convolutional layer</li>
+<li>One local response normalization layer</li>
+<li>One pooling layer</li>
+<li>One fully connected layer</li>
+<li>One fully connected layer</li>
+<li>One output layer</li>
+</ul>
+<p>The model is trained and evaluated using the TensorFlow framework. The configuration of the training as well as the model itself can be found <a href="https://github.com/stlong0521/language-detector/blob/master/language_detector/modeling/config.yaml">here</a>, and the results are discussed in the next section.</p>
+<h3>Results &amp; Discussion</h3>
+<p>Due to limited resources on a regular PC (that is what I have), there was only 19300 iterations performed during the training step, which took around 24 hours. However, the evaluation on the test set delivered an accuracy of as high as 92.7%. It should be noted that the classification is merely based on a very short audio sample (lasting for one second only).</p>
+<p>There are at least three potential ways to make the accuracy even higher:</p>
+<ol>
+<li>Collect more data to train the model;</li>
+<li>Apply more iterations during training, if more resources are available;</li>
+<li>Most likely, an utterance lasts for more than one second, which gives us a chance to apply majority voting across the classification results drawn independently from multiple one-second audio pieces. A weighted voting is even better and meanwhile definitely doable, as each classification returns not only a label but also the confidence.</li>
+</ol>
+<p>The last approach turns out to be a very effective way to boost the classification accuracy, which barely consumes any additional resource but can reduce the classification error dramatically.</p>
+<h3>Code Repository</h3>
+<p>Check out the <a href="https://github.com/stlong0521/language-detector">codes</a>, if you are interested in the implementation.</p>
+<h3>Acknowledgment</h3>
+<p>This project is inspired by and a large portion of codes comes from the great work <a href="https://github.com/twerkmeister/iLID">here</a>.</p></div>
         <hr />
     </div> -->
+
+    <div class='article'>
+        <a href="https://stlong0521.github.io/20171015 - Language Detection.html"><h2>Language Detection from Speech: Chinese or English?</h2></a>
+        <div class= "well small"> Sun 15 Oct 2017
+
+by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.html">Tianlong Song</a>
+ 
+
+
+ 
+    Tags <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a> <a href="https://stlong0521.github.io/tag/natural-language-processing.html">Natural Language Processing</a>  </div>
+        <div class="summary"><p>In language processing, it is an essential step to detect which language it is before speech recognition and machine translation. This blog post presents an approach to distinguish Chinese and English from speech (an audio sample) using a neural network model. <a href="https://spark.apache.org/">Spark</a> is used to perform data preprocessing, and <a href="https://www.tensorflow.org/">TensorFlow ...</a></p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20171015 - Language Detection.html">read more</a></div>
+    </div>
+	
+
+ 
+        
+
+ 
 
     <div class='article'>
         <a href="https://stlong0521.github.io/20160409 - MCTS.html"><h2>Monte Carlo Tree Search and Its Application in AlphaGo</h2></a>
@@ -222,8 +160,8 @@ by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.htm
  
     Tags <a href="https://stlong0521.github.io/tag/machine-learning.html">Machine Learning</a>  </div>
         <div class="summary"><p>As one of the most important methods in artificial intelligence (AI), especially for playing games, Monte Carlo tree search (MCTS) has received considerable interest due to its spectacular success in the difficult problem of computer Go. In fact, most successful computer Go algorithms are powered by MCTS, including the recent ...</p> <a class="btn btn-info xsmall" href="https://stlong0521.github.io/20160409 - MCTS.html">read more</a></div>
-    </div>
-	
+    </div>	
+				
 
  
         
@@ -456,7 +394,7 @@ by <a class="url fn" href="https://stlong0521.github.io/author/tianlong-song.htm
     </div>     </div> 
 <footer>
 <br />
-<p><a href="https://stlong0521.github.io">Tianlong's Blog</a> &copy; Tianlong Song 2016</p>
+<p><a href="https://stlong0521.github.io">Tianlong's Blog</a> &copy; Tianlong Song 2017</p>
 </footer>
 
 </div> <!-- /container -->
