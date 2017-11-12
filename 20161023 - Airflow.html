@@ -271,7 +271,7 @@ executor = CeleryExecutor
 
 # Set up the RabbitMQ broker url and celery result backend
 broker_url = amqp://rabbitmq_user_name:rabbitmq_password@host_name/rabbitmq_virtual_host_name # host_name=localhost on server
-celery_result_backend = same as above
+celery_result_backend = meta db url (as configured in step 2 of Phase 2), or RabbitMQ broker url (same as above), or any other eligible result backend
 </pre></div>
 
 
